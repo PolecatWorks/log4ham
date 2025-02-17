@@ -1,7 +1,7 @@
 use std::{env, time::Duration};
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use large_json::{
+use log4ham::{
     persistence::{
         DbConfig, ObjectStoreConfig, ObjectStoreType, PersistenceConfig, PersistenceState,
     },
@@ -32,12 +32,7 @@ pub fn bench_list_handlers(c: &mut Criterion) {
                 password: None,
             },
         },
-        object_store: ObjectStoreConfig {
-            os_type: ObjectStoreType::LocalFileSystem {
-                prefix: "test_data/object_store".to_owned(),
-            },
-            prefix: "lists".to_owned(),
-        },
+
     };
 
     //     pool_size: 5,
