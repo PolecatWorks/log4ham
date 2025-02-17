@@ -1,0 +1,6 @@
+apiVersion: v2
+name: k8s-python
+description: Serve python app
+version: 0.0.0
+appVersion: 0.2.0
+dependencies: []

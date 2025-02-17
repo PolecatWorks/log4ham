@@ -1,0 +1,17 @@
+{{- if .Values.devsecops.RequestAuthorization.jwtRules -}}
+---
+apiVersion: "security.istio.io/v1beta1"
+kind: RequestAuthentication
+metadata:
+  name: {{ include "log4ham.fullname" . }}
+  labels:
+    {{- include "log4ham.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "log4ham.selectorLabels" . | nindent 6 }}
+  #   peers:
+  #   - mtls: {}
+  jwtRules:
+  {{-  tpl (toYaml .Values.devsecops.RequestAuthentication.jwtRules) . | nindent 4 }}
+{{- end }}

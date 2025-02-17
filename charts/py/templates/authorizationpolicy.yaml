@@ -1,0 +1,14 @@
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ include "k8s-python.fullname" . }}
+  labels:
+    {{- include "k8s-python.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "k8s-python.selectorLabels" . | nindent 6 }}
+  action: ALLOW
+  rules:
+  {{-  tpl (toYaml .Values.devsecops.AuthorizationPolicy.rules) . | nindent 4 }}

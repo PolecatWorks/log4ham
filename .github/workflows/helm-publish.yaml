@@ -1,0 +1,73 @@
+name: Helm
+
+on:
+  push:
+    branches:
+      - main
+    tags: [ 'v*.*.*' ]
+    paths:
+      - 'charts/**'
+      - '.github/workflows/helm-publish.yaml'
+env:
+    REGISTRY: ghcr.io
+jobs:
+  package-helm-chart:
+    permissions:
+      contents: read
+      packages: write
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set environment variables
+        id: set-variables
+        run: |
+          SHORTER_REPO=${GITHUB_REPOSITORY%:*}
+          LOWER_REPO=${SHORTER_REPO@L}
+          echo "REPOSITORY=$LOWER_REPO"
+          echo "REPOSITORY=$LOWER_REPO" >> "$GITHUB_ENV"
+          echo "REPOSITORY_BASE=${GITHUB_REPOSITORY_OWNER@L}" >> "$GITHUB_ENV"
+
+        #   echo "REPOSITORY=ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+        #   echo "REPOSITORY=ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+        #   echo "VERSION=$(yq -r .version ./charts/sample-app/Chart.yaml)" >> "$GITHUB_OUTPUT"
+
+      - name: Package Helm charts
+        id: test-variables
+        run: |
+          cd charts
+          find . -type d -maxdepth 1 -not -path "." | while read dir; do
+            echo "Processing directory: $dir"
+            chart_info=$(helm show chart "$dir" 2>/dev/null)
+
+            chart_name=$(echo "$chart_info" | grep '^name:' | awk '{print $2}')
+            chart_version=$(echo "$chart_info" | grep '^version:' | awk '{print $2}')
+            echo "Packaging: $chart_name: $chart_version"
+
+            helm package "$dir"
+
+            echo "Package: $chart_name-$chart_version.tgz"
+
+          done
+        #   echo ${{ steps.set-variables.outputs.REPOSITORY }}
+        #   echo ${{ steps.set-variables.outputs.VERSION }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Push Helm chart to GitHub Container Registry
+        run: |
+          cd charts
+          find . -type f -name "*.tgz" | while read file; do
+            echo "Processing file: $file"
+
+            helm push "$file" oci://${REGISTRY}/${REPOSITORY_BASE}/helm-charts
+            echo "Published: $file"
+          done

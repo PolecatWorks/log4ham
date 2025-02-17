@@ -1,0 +1,24 @@
+---
+# kubectl -n dbs exec -it $(kubectl -n dbs get pods -l app.kubernetes.io/component=pgpool,app.kubernetes.io/name=postgresql-ha -o jsonpath='{.items[0].metadata.name}') -- cat /opt/bitnami/pgpool/conf/pool_passwd
+# kubectl -n dbs create secret generic keycloak-poolusers --from-literal=usernames=security-pg-keycloak --from-literal=passwords=$(kubectl get secret keycloak-postgresql -o jsonpath='{.data.db-password}' | base64 -d)
+apiVersion: kinda.rocks/v1beta1
+kind: Database
+metadata:
+  name: pg-log4ham
+spec:
+  instance: pg-instance # must match with DbInstance name
+  deletionProtected: false # Protection to not delete database when custom resource is deleted
+  backup:
+    enable: false
+    cron: "0 0 * * *"
+  # secret in which the credentials for the database should be stored (same namespace)
+  secretName: log4ham-pg
+  # the content of the secret
+  secretsTemplates:
+    CONNECTION_STRING: "{{ .Protocol }}://{{ .UserName }}:{{ .Password }}@{{ .DatabaseHost }}:{{ .DatabasePort }}/{{ .DatabaseName }}"
+    DB_PASS: "{{ .Password }}"
+    DB_USER: "{{ .UserName }}"
+    DB_HOST: "{{ .DatabaseHost }}"
+    DB_PORT: "{{ .DatabasePort }}"
+    DB_NAME: "{{ .DatabaseName }}"
+    DB_TYPE: "{{ .Protocol }}"

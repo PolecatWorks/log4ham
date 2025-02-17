@@ -1,0 +1,20 @@
+---
+# Notes on setting attributes https://github.com/PolecatWorks/log4ham
+apiVersion: v2
+name: log4ham
+description: Logging application for HAM radio running on Kubernetes
+version: 0.0.0
+appVersion: 0.2.0  # The version of the app that this contains (ie docker container)
+home: http://www.polecatworks.com
+icon: A URL to an SVG or PNG image to be used as an icon (optional).
+sources:
+  - https://github.com/PolecatWorks/log4ham
+maintainers:
+  - name: Ben Greene
+    email: BenJGreene@gmail.com
+dependencies: []
+annotations:
+  deployment: Kubernetes
+  backend: rust
+  db: Postgresql
+  frontend: Angular

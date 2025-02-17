@@ -1,0 +1,82 @@
+{{- $configsha := tpl (include "log4ham.config" .) . | sha256sum }}
+{{- $configshamini := substr 0 8 $configsha }}
+{{- $volumesha := tpl (toYaml .Values.volumes) . | sha256sum }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "log4ham.fullname" . }}
+  labels:
+    {{- include "log4ham.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      component: service-pod
+      {{- include "log4ham.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ $configsha }}
+        checksum/volumes: {{ $volumesha }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        component: service-pod
+        {{- include "log4ham.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "log4ham.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes: {{- include "log4ham.volumes" . | nindent 8 }}
+      containers:
+        - name: log4ham
+          env: {{- include "log4ham.env" . | nindent 10 }}
+          command: {{- .Values.command | toYaml | nindent 10 }}
+          {{- with .Values.args }}
+          args: {{- toYaml . | nindent 10 }}
+          {{- end }}
+          volumeMounts: {{- include "log4ham.volumeMounts" . | nindent 10 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default  .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http-health
+              containerPort: 8079
+              protocol: TCP
+            - name: http-web
+              containerPort: 8080
+              protocol: TCP
+          lifecycle: {{- toYaml .Values.lifecycle | nindent 10 }}
+
+          # NOT using startupProbe as it provides us no benefit here. AND detrimetally provides a fake positive start.
+          # startupProbe:
+          #   httpGet:
+          #     port: http-health
+          #     path: "/hams/startup"
+          #   failureThreshold: {{ .Values.health.startupProbe.failureThreshold }}
+          #   periodSeconds: {{ .Values.health.startupProbe.periodSeconds }}
+          livenessProbe: {{- toYaml .Values.livenessProbe | nindent 10 }}
+          readinessProbe: {{- toYaml .Values.readinessProbe | nindent 10 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

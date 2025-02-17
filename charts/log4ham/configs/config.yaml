@@ -1,0 +1,32 @@
+---
+hams:
+  address: 127.0.0.1:8079
+  prefix: hams
+  checks:
+    timeout: 5
+    fails: 2
+    preflights: []
+    # - http://localhost:4201
+    shutdowns: []
+
+webservice:
+  prefix:
+    name: view
+    version: v0
+  address: 0.0.0.0:8080
+persistence:
+  local_file:
+    prefix: test_data/local_files
+  object_store:
+    prefix: myfiles
+    os_type:
+      Aws:
+        region: us-east-1
+        endpoint: http://minio.minio.svc:9000
+        bucket_name: bucket1
+        access_key_id_file: s3/access_key_id
+        secret_key_file: s3/secret_key
+        allow_http: true
+
+      # LocalFileSystem:
+      #   prefix: test_data/object_store

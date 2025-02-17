@@ -1,0 +1,16 @@
+{{- if .Values.devsecops.AuthorizationPolicy.rules -}}
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ include "log4ham.fullname" . }}
+  labels:
+    {{- include "log4ham.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "log4ham.selectorLabels" . | nindent 6 }}
+  action: ALLOW
+  rules:
+  {{-  tpl (toYaml .Values.devsecops.AuthorizationPolicy.rules) . | nindent 4 }}
+{{- end }}
