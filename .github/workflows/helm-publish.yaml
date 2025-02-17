@@ -8,6 +8,9 @@ on:
     paths:
       - 'charts/**'
       - '.github/workflows/helm-publish.yaml'
+  pull_request:
+    branches: [ "main" ]
+
 env:
     REGISTRY: ghcr.io
 jobs:
