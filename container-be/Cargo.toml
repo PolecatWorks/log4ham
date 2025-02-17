@@ -1,0 +1,49 @@
+[package]
+name = "log4ham"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ben Greene <BenJGreene@gmail.com>"]
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bytes = "~1.10"
+clap = { version = "~4.5", features = ["derive", "string"] }
+env_logger = "~0.11"
+futures = "~0.3"
+log = "~0.4"
+schemars = "~0.8"
+serde =  { version ="~1.0", features = ["derive"] }
+serde_json = "~1.0"
+serde_with = { version = "3.12", features = ["time_0_3", "macros"] }
+
+figment = { version = "~0.10", features = ["yaml", "env"] }
+figment_file_provider_adapter = "~0.1.1"
+tokio = { version = "1.43", features = ["full"] }
+# tokio-stream = "0.1.14"
+tokio-util = { version = "~0.7", default-features = false }
+warp = "~0.3.5"
+uuid = {version="~1.13", features = ["v4"]}
+
+sqlx = { version = "~0.8", features = [ "runtime-tokio", "postgres", "migrate", "json" ] }
+url = { version = "2", features = ["serde"] }
+
+# object_store ={ version = "~0.11", features = ["aws"] }
+reqwest = { version = "~0.12", default-features = false}
+hamsrs = { git = "https://github.com/PolecatWorks/hams.git" }
+
+[dev-dependencies]
+criterion = { version = "~0.5", features = ["async_tokio"] }
+
+[[bench]]
+name = "validate"
+harness = false
+
+[[bench]]
+name = "http"
+harness = false
+
+[[bench]]
+name = "handlers"
+harness = false
