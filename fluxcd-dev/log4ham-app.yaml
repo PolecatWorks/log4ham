@@ -1,0 +1,67 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: app
+spec:
+  releaseName: app
+  chart:
+    spec:
+      chart: helm-charts/log4ham
+      version: 0.0.0
+      sourceRef:
+        kind: HelmRepository
+        namespace: flux-system
+        name: polecatworks
+  interval: 50m
+  install:
+    remediation:
+      retries: 3
+  values:
+    imagePullSecrets:
+      - name: dockerconfigjson-ghcr-io
+    fe:
+      webservice:
+        prefix: /
+      image:
+        repository: ghcr.io/polecatworks/log4ham-fe
+        tag: main
+        pullPolicy: Always
+    be:
+      webservice:
+        prefix: /app/v0
+      image:
+        repository: ghcr.io/polecatworks/log4ham-be
+        tag: main
+        pullPolicy: Always
+    devsecops:
+      RequestAuthentication:
+        jwtRules: []
+          # - issuer: http://dev.k8s/auth/realms/dev
+          #   jwksUri: http://keycloak.security/auth/realms/dev/protocol/openid-connect/certs
+          #   forwardOriginalToken: true
+          #   audiences:
+          #     - app-cake
+      AuthorizationPolicy:
+        rules: []
+        # - to:
+        #   - operation:
+        #       methods:
+        #       - GET
+        #       paths:
+        #       - /cake/v0/chunks
+        #   when:
+        #   - key: request.auth.claims[resource_access][app-pie][roles]
+        #     values:
+        #     - chunks-read
+        # - to:
+        #   - operation:
+        #       methods:
+        #       - POST
+        #       - PUT
+        #       paths:
+        #       - /cake/v0/chunks
+        #   when:
+        #   - key: request.auth.claims[resource_access][app-pie][roles]
+        #     values:
+        #     - chunks-write
