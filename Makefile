@@ -23,17 +23,17 @@ ghcr-login:
 docker-fe:
 	{ \
 	$(DOCKER) build container-fe -t $(IMAGE_NAME)-fe -f container-fe/Dockerfile; \
-	$(DOCKER) image ls $(IMAGE_NAME); \
+	$(DOCKER) image ls $(IMAGE_NAME)-fe; \
 	}
 
 docker-fe-run: docker-fe
 	$(DOCKER) run --rm -it -p 8080:8080 $(IMAGE_NAME)-fe
 
-
+docker-be: PKG_NAME=log4ham
 docker-be:
 	{ \
-	$(DOCKER) build container-be -t $(IMAGE_NAME)-be -f container-be/Dockerfile; \
-	$(DOCKER) image ls $(IMAGE_NAME); \
+	$(DOCKER) build container-be -t $(IMAGE_NAME)-be -f container-be/Dockerfile --build-arg PKG_NAME=${PKG_NAME}; \
+	$(DOCKER) image ls $(IMAGE_NAME)-be; \
 	}
 
 
