@@ -64,8 +64,8 @@ spec:
           #     path: "/hams/startup"
           #   failureThreshold: {{ .Values.health.startupProbe.failureThreshold }}
           #   periodSeconds: {{ .Values.health.startupProbe.periodSeconds }}
-          livenessProbe: {{- toYaml .Values.livenessProbe | nindent 10 }}
-          readinessProbe: {{- toYaml .Values.readinessProbe | nindent 10 }}
+          livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml .Values.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
