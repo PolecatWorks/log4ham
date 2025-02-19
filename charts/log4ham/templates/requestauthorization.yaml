@@ -1,4 +1,4 @@
-{{- if .Values.devsecops.RequestAuthorization.jwtRules -}}
+{{- if .Values.devsecops.RequestAuthentication.jwtRules -}}
 ---
 apiVersion: "security.istio.io/v1beta1"
 kind: RequestAuthentication
