@@ -1,42 +1,50 @@
 env: {}
 
 
-replicaCount: 1
 
-lifecycle:
-  preStop:
+fe:
+  webservice:
+    prefix: /
+  image:
+    repository: polecatworks/log4ham-fe
+    tag: latest
+    pullPolicy: IfNotPresent
+be:
+  webservice:
+    prefix: /app/v0
+  image:
+    repository: polecatworks/log4ham-be
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  replicaCount: 1
+
+  lifecycle:
+    preStop:
+      httpGet:
+        port: http-health
+        path: /hams/stop
+
+  startupProbe: {}
+
+  livenessProbe:
     httpGet:
       port: http-health
-      path: /hams/stop
-
-livenessProbe:
-  httpGet:
-    port: http-health
-    path: /hams/alive
+      path: /hams/alive
     periodSeconds: 30
     initialDelaySeconds: 30
 
-readinessProbe:
-  httpGet:
-    port: http-health
-    path: /hams/ready
-  periodSeconds: 5
-
-
-health:
-  startupProbe:
-    failureThreshold: 30
-    periodSeconds: 10
-  livenessProbe:
-    periodSeconds: 30
   readinessProbe:
+    httpGet:
+      port: http-health
+      path: /hams/ready
     periodSeconds: 5
 
+podAnnotations:
+  prometheus.io/path: /hams/metrics
+  prometheus.io/port: "8079"
+  prometheus.io/scrape: "true"
 
-image: &image
-  repository: polecatworks/log4ham
-  tag: latest
-  pullPolicy: IfNotPresent
 
 imagePullSecrets: []
 nameOverride: ""
@@ -51,10 +59,6 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
-podAnnotations:
-  prometheus.io/path: /hams/metrics
-  prometheus.io/port: "8079"
-  prometheus.io/scrape: "true"
 
 podSecurityContext: {}
   # fsGroup: 2000
@@ -103,18 +107,6 @@ global: {}  # TODO: Work to remove this
 configs: {}  # Note: Defaults provided in helm configs dir
 
 
-
-
-command0:
-- /entrypoint.sh
-command1:
-- bash
-- -c
-- "sleep infinity"
-command2:
-- bash
-- -c
-- "mkdir -p /opt/app/objects/test_data/object_store; /usr/local/bin/log4ham receive --config /opt/app/configs/serviceconfig.yaml"
 command:
 - log4ham
 - start
@@ -125,7 +117,7 @@ command:
 
 secretName: null
 
-volumes: &volumes
+volumes:
   - name: configs
     configMap:
       name: "{{ template \"log4ham.fullname\" . }}"
@@ -154,15 +146,6 @@ volumeMounts: &volume-mount
   - name: secrets
     mountPath: /opt/app/secrets
 
-
-
-# virtualservice:
-#   targetService: dynamic-lists
-#   targetPort: 8999
-#   match:
-#   - uri:
-#       prefix: "/dynamic-lists/api/v0/hello"
-#     port: 8999
 
 devsecops:
   RequestAuthentication:

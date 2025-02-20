@@ -46,8 +46,8 @@ spec:
           volumeMounts: {{- include "log4ham.volumeMounts" . | nindent 10 }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default  .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.be.image.repository }}:{{ .Values.be.image.tag | default  .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.be.image.pullPolicy }}
           ports:
             - name: http-health
               containerPort: 8079
@@ -55,17 +55,14 @@ spec:
             - name: http-web
               containerPort: 8080
               protocol: TCP
-          lifecycle: {{- toYaml .Values.lifecycle | nindent 10 }}
+          lifecycle: {{- toYaml .Values.be.lifecycle | nindent 12 }}
 
-          # NOT using startupProbe as it provides us no benefit here. AND detrimetally provides a fake positive start.
-          # startupProbe:
-          #   httpGet:
-          #     port: http-health
-          #     path: "/hams/startup"
-          #   failureThreshold: {{ .Values.health.startupProbe.failureThreshold }}
-          #   periodSeconds: {{ .Values.health.startupProbe.periodSeconds }}
-          livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}
-          readinessProbe: {{- toYaml .Values.readinessProbe | nindent 12 }}
+          # Suggest to NOT using startupProbe as it provides us no benefit here. AND detrimetally provides a fake positive start.
+          {{- if .Values.be.startupProbe }}
+          startupProbe: {{- toYaml .Values.be.startupProbe | nindent 12 }}
+          {{- end }}
+          livenessProbe: {{- toYaml .Values.be.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml .Values.be.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
