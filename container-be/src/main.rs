@@ -44,8 +44,8 @@ enum Commands {
         /// filename to read content from
         filename: String,
     },
-    /// Receive json file via http
-    Receive {
+    /// Start the http service
+    Start {
         /// Sets a custom config file
         #[arg(short, long, value_name = "FILE")]
         config: PathBuf,
@@ -85,7 +85,7 @@ fn main() -> Result<(), MyError> {
         Commands::Schema => println!("{}", schema_person_string()?),
         Commands::SchemaList => println!("{}", schema_string::<Vec<Person>>()?),
         Commands::Validate { filename } => todo!("Validate {filename}"),
-        Commands::Receive { config, secrets } => {
+        Commands::Start { config, secrets } => {
             info!("Starting {NAME} for {VERSION}");
 
             let config: MyConfig = MyConfig::figment(config, secrets)

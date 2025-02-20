@@ -1,0 +1,9 @@
+---
+be:
+  image:
+    pullPolicy: Always
+    repository: ghcr.io/polecatworks/log4ham-be
+    tag: main
+
+# imagePullSecrets:
+#   - name: polecatworks-classic
