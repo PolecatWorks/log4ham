@@ -5,5 +5,5 @@ be:
     repository: ghcr.io/polecatworks/log4ham-be
     tag: main
 
-# imagePullSecrets:
-#   - name: polecatworks-classic
+imagePullSecrets:
+  - name: polecatworks-classic

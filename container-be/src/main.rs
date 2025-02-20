@@ -8,7 +8,7 @@ use log4ham::{
         schema_person_string, schema_string, write_records, Person,
     },
     error::MyError,
-    webserver::http_receive_json,
+    webserver::service_start,
 };
 use log::info;
 
@@ -94,7 +94,7 @@ fn main() -> Result<(), MyError> {
 
             info!("Loaded config {:?}", config);
 
-            http_receive_json(config)?
+            service_start(config)?
         }
         Commands::DbCheck { config, secrets } => {
             info!("Starting {NAME} for {VERSION}");
