@@ -18,7 +18,7 @@ use warp::Filter;
 
 use crate::{
     error::MyError,
-    hams::{start_hams_api, Checks, HamsConfig},
+    hams::{start_hams_api, HamsConfig},
     handle_rejection,
     persistence::{PersistenceConfig, PersistenceState},
     tokio_tools::run_in_tokio,
@@ -97,10 +97,9 @@ pub struct WebServiceConfig {
 #[derive(Deserialize, Debug, Clone)]
 pub struct MyConfig {
     /// Config of my web service
-    pub checks: Checks,
+    pub hams: HamsConfig,
     pub webservice: WebServiceConfig,
     pub persistence: PersistenceConfig,
-    pub hams: HamsConfig,
 }
 
 impl MyConfig {
@@ -146,7 +145,6 @@ pub async fn service_cancellable(ct: CancellationToken, config: MyConfig) -> Res
     let hams = tokio::spawn(start_hams_api(state.config.hams.clone(), ct.clone()));
 
     let client = reqwest::Client::new();
-    state.config.checks.preflight(&client).await?;
 
     let server = start_app_api(state.clone(), pool_pg, ct.clone());
 
@@ -209,7 +207,7 @@ fn with_pathbuf(
 }
 
 
-pub fn http_receive_json(config: MyConfig) -> Result<(), MyError> {
+pub fn service_start(config: MyConfig) -> Result<(), MyError> {
     let ct = CancellationToken::new();
 
     run_in_tokio(service_cancellable(ct, config))
