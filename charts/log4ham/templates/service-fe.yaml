@@ -1,8 +1,14 @@
+{{- if .Values.fe.enabled }}
+
+{{- $root := . }}
+{{- $newVal := dict "Values" .Values.fe "Files" .Files "Chart" .Chart "Release" .Release -}}
+{{- with $newVal }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "log4ham.fullname" . }}
+  name: {{ include "log4ham.fullname" . }}-fe
   labels:
+    component: frontend
     {{- include "log4ham.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type | default "ClusterIP" }}
@@ -16,5 +22,7 @@ spec:
       protocol: TCP
       targetPort: 15020
   selector:
-    component: service-pod
+    component: frontend-pod
     {{- include "log4ham.selectorLabels" . | nindent 4 }}
+{{- end }}{{/* with */}}
+{{- end }}

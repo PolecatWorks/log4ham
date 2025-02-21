@@ -1,0 +1,28 @@
+{{- if .Values.be.enabled }}
+
+{{- $root := . }}
+{{- $newVal := dict "Values" .Values.be "Files" .Files "Chart" .Chart "Release" .Release -}}
+{{- with $newVal }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "log4ham.fullname" . }}-be
+  labels:
+    component: backend
+    {{- include "log4ham.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type | default "ClusterIP" }}
+  ports:
+    - port: {{ .Values.service.port | default 80 }}
+      targetPort: http-web
+      protocol: TCP
+      name: http-web
+    - name: http-envoy-prom
+      port: 15020
+      protocol: TCP
+      targetPort: 15020
+  selector:
+    component: service-pod
+    {{- include "log4ham.selectorLabels" . | nindent 4 }}
+{{- end }}{{/* with */}}
+{{- end }}

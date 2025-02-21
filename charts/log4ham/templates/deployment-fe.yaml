@@ -1,19 +1,17 @@
-{{- if .Values.be.enabled }}
+{{- if .Values.fe.enabled }}
 
 {{- $root := . }}
-{{- $newVal := dict "Values" .Values.be "Files" .Files "Chart" .Chart "Release" .Release -}}
+{{- $newVal := dict "Values" .Values.fe "Files" .Files "Chart" .Chart "Release" .Release -}}
 {{- with $newVal }}
 
-{{- $configsha := tpl (include "log4ham.config-be" .) . | sha256sum }}
-{{- $configshamini := substr 0 8 $configsha }}
 {{- $volumesha := tpl (toYaml .Values.volumes) . | sha256sum }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "log4ham.fullname" . }}-be
+  name: {{ include "log4ham.fullname" . }}-fe
   labels:
-    component: service-pod
+    component: frontend-pod
     {{- include "log4ham.labels" . | nindent 4 }}
 spec:
   {{- if not $root.Values.autoscaling.enabled }}
@@ -21,18 +19,17 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      component: service-pod
+      component: frontend-pod
       {{- include "log4ham.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
-        checksum/config: {{ $configsha }}
         checksum/volumes: {{ $volumesha }}
       {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        component: service-pod
+        component: frontend-pod
         {{- include "log4ham.selectorLabels" . | nindent 8 }}
     spec:
       {{- with $root.Values.imagePullSecrets }}
@@ -41,24 +38,21 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "log4ham.serviceAccountName" $root }}
       securityContext:
-        {{- toYaml $root.Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       volumes: {{- include "log4ham.volumes" . | nindent 8 }}
       containers:
         - name: log4ham
-          env: {{- include "log4ham.env" . | nindent 10 }}
-          command: {{- .Values.command | toYaml | nindent 10 }}
+          env: {{- include "log4ham.env" . | nindent 12 }}
+          command: {{- .Values.command | toYaml | nindent 12 }}
           {{- with .Values.args }}
-          args: {{- toYaml . | nindent 10 }}
+          args: {{- toYaml . | nindent 12 }}
           {{- end }}
-          volumeMounts: {{- include "log4ham.volumeMounts" . | nindent 10 }}
+          volumeMounts: {{- include "log4ham.volumeMounts" . | nindent 12 }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default  .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - name: http-health
-              containerPort: 8079
-              protocol: TCP
             - name: http-web
               containerPort: 8080
               protocol: TCP

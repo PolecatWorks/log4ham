@@ -1,0 +1,18 @@
+{{- if .Values.be.enabled }}
+
+{{- $root := . }}
+{{- $newVal := dict "Values" .Values.be "Files" .Files "Chart" .Chart "Release" .Release -}}
+{{- with $newVal }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "log4ham.fullname" . }}-be
+  labels:
+    {{- include "log4ham.labels" . | nindent 4 }}
+data:
+  serviceconfig.yaml: |
+    {{- include "log4ham.config-be" . | nindent 4 }}
+
+{{- end }}{{/* with */}}
+{{- end }}
