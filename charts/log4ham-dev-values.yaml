@@ -4,6 +4,18 @@ be:
     pullPolicy: Always
     repository: ghcr.io/polecatworks/log4ham-be
     tag: main
+  configs:
+    persistence:
+      db:
+        connection:
+          url: postgres://postgresql-postgresql-ha-pgpool.dbs:5432/log4ham-pg-log4ham
+          username: log4ham-pg-log4ham
+          password: 5L3-_4bwFI5-xp705ZEiS5
+fe:
+  image:
+    pullPolicy: Always
+    repository: ghcr.io/polecatworks/log4ham-fe
+    tag: main
 
 imagePullSecrets:
   - name: polecatworks-classic

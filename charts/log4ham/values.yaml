@@ -1,21 +1,51 @@
-env: {}
 
 
 
 fe:
+  enabled: true
   webservice:
     prefix: /
   image:
     repository: polecatworks/log4ham-fe
     tag: latest
     pullPolicy: IfNotPresent
+  livenessProbe:
+    httpGet:
+      port: http-web
+      path: /alive
+    periodSeconds: 30
+    initialDelaySeconds: 30
+  # readinessProbe:
+  #   httpGet:
+  #     port: http-health
+  #     path: /hams/ready
+  #   periodSeconds: 5
+
+  volumeMounts: []
+  volumes: []
+  command: []
+  service:
+    type: ClusterIP
+    port: 80
+
 be:
+  enabled: true
   webservice:
     prefix: /app/v0
   image:
     repository: polecatworks/log4ham-be
     tag: latest
     pullPolicy: IfNotPresent
+
+  command:
+    - log4ham
+    - start
+    - --config
+    - /opt/app/configs/serviceconfig.yaml
+    - --secrets
+    - /opt/app/secrets
+
+  env: {}
 
   replicaCount: 1
 
@@ -39,6 +69,41 @@ be:
       port: http-health
       path: /hams/ready
     periodSeconds: 5
+
+
+  volumes:
+    - name: configs
+      configMap:
+        name: "{{ template \"log4ham.fullname\" . }}-be"
+    - name: objects
+      emptyDir:
+        sizeLimit: 500Mi
+    - name: secrets
+      projected:
+        sources:
+          - secret:
+              optional: true
+              name: "{{ .Values.secretName | default (include \"log4ham.fullname\" .) }}"
+              items:
+                - key: access_key_id
+                  path: s3/access_key_id
+                - key: secret_key
+                  path: s3/secret_key
+
+
+  volumeMounts:
+    - name: configs
+      mountPath: /opt/app/configs
+    - name: objects
+      # TODO: remove objects as we use real object-store
+      mountPath: /opt/app/objects
+    - name: secrets
+      mountPath: /opt/app/secrets
+
+  service:
+    type: ClusterIP
+    port: 80
+
 
 podAnnotations:
   prometheus.io/path: /hams/metrics
@@ -71,9 +136,6 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
-service:
-  type: ClusterIP
-  port: 80
 
 
 resources: {}
@@ -107,44 +169,8 @@ global: {}  # TODO: Work to remove this
 configs: {}  # Note: Defaults provided in helm configs dir
 
 
-command:
-- log4ham
-- start
-- --config
-- /opt/app/configs/serviceconfig.yaml
-- --secrets
-- /opt/app/secrets
 
 secretName: null
-
-volumes:
-  - name: configs
-    configMap:
-      name: "{{ template \"log4ham.fullname\" . }}"
-  - name: objects
-    emptyDir:
-      sizeLimit: 500Mi
-  - name: secrets
-    projected:
-      sources:
-        - secret:
-            optional: true
-            name: "{{ .Values.secretName | default (include \"log4ham.fullname\" .) }}"
-            items:
-              - key: access_key_id
-                path: s3/access_key_id
-              - key: secret_key
-                path: s3/secret_key
-
-
-volumeMounts: &volume-mount
-  - name: configs
-    mountPath: /opt/app/configs
-  - name: objects
-    # TODO: remove objects as we use real object-store
-    mountPath: /opt/app/objects
-  - name: secrets
-    mountPath: /opt/app/secrets
 
 
 devsecops:
