@@ -1,7 +1,7 @@
 pub mod lists;
 
 use figment::{
-    providers::{Format, Yaml},
+    providers::{Env, Format, Yaml},
     Figment,
 };
 use figment_file_provider_adapter::FileAdapter;
@@ -107,8 +107,7 @@ impl MyConfig {
     // top-level dictionary act as a profile.
     pub fn figment<P: AsRef<Path> + Clone>(path: P, secrets: P) -> Figment {
         Figment::new()
-            .merge(FileAdapter::wrap(Yaml::file(path.clone())))
-            .merge(Yaml::file(path))
+            .merge(FileAdapter::wrap(Yaml::file(path)).relative_to_dir(secrets))
     }
 }
 
