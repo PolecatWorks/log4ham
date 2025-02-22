@@ -1,0 +1,23 @@
+---
+hams:
+  address: 127.0.0.1:8079
+  prefix: hams
+  checks:
+    timeout: 5
+    fails: 2
+    preflights: []
+    # - http://localhost:4201
+    shutdowns: []
+webservice:
+  prefix:
+    name: view
+    version: v0
+  address: 0.0.0.0:8080
+  forwarding_headers: []
+persistence:
+  db:
+    pool_size: 10
+    connection:
+      url: postgres://localhost:5432/log4ham-pg-log4ham
+      username_file: db/username
+      password_file: db/password
