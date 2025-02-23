@@ -46,6 +46,7 @@ be:
     - /opt/app/secrets
 
   env: {}
+  configs: {}  # Note: Defaults provided in helm configs dir
 
   replicaCount: 1
 
@@ -166,7 +167,6 @@ affinity: {}
 
 global: {}  # TODO: Work to remove this
 
-configs: {}  # Note: Defaults provided in helm configs dir
 
 
 
