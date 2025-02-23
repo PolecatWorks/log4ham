@@ -47,4 +47,4 @@ ENTRYPOINT ["/usr/local/bin/${PKG_NAME}"]
 CMD ["-l", "sample01", "start"]
 
 
-EXPOSE 8080
+EXPOSE 8080 8079
