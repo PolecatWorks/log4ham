@@ -10,7 +10,7 @@ hams:
     shutdowns: []
 webservice:
   prefix:
-    name: view
+    name: ham4log
     version: v0
   address: 0.0.0.0:8080
   forwarding_headers: []
