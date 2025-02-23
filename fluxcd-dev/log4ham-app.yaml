@@ -19,7 +19,7 @@ spec:
       retries: 3
   values:
     imagePullSecrets:
-      - name: dockerconfigjson-ghcr-io
+      - name: polecatworks-classic
     fe:
       webservice:
         prefix: /
