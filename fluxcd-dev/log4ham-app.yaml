@@ -52,12 +52,12 @@ spec:
           projected:
             sources:
               - secret:
-                  optional: true
+                  optional: false
                   name: log4ham-pg
                   items:
                     - key: DB_USER
                       path: db/username
-                    - key: DB_PASSWORD
+                    - key: DB_PASS
                       path: db/password
                     - key: CONNECTION_STRING
                       path: db/url
