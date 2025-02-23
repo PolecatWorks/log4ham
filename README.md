@@ -12,6 +12,12 @@ Create an abaility to log Amateur Radio calls
 
 Follow this guide: https://dev.to/asizikov/using-github-container-registry-with-kubernetes-38fb
 
+Pull your DB to local to test
+
+    kubectl -n dbs port-forward svc/postgresql-postgresql-ha-pgpool 5432
+
+    cargo watch -x "run start --config test-data/config-be.yaml --secrets ${PWD}/test-data/secrets"
+
 
 # ToDo
 
