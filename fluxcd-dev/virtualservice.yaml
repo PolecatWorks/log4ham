@@ -1,0 +1,24 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ham4log
+spec:
+  hosts:
+  - ham4log.k8s
+  gateways:
+  - istio-ingress/k8s-gateway
+  - mesh # applies to all the sidecars in the mesh
+  http:
+  - name: ham4log-be
+    match:
+      - uri:
+          prefix: /view/v0
+    route:
+    - destination:
+        host: app-log4ham-be
+  - name: ham4log-fe
+    # Default for all traffic that does not match an API path (above)
+    route:
+    - destination:
+        host: app-log4ham-fe
