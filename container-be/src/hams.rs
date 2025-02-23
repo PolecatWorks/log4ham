@@ -23,7 +23,9 @@ pub struct HamsConfig {
 pub async fn start_hams_api(config: HamsConfig, ct: CancellationToken) -> Result<(), MyError> {
     let weblog = warp::log("hams");
 
-    let router = warp::any().map(|| "Hello from Hams".to_string());
+    let router = warp::any()
+        .map(|| "Hello from Hams".to_string())
+        .with(weblog);
 
     let (addr, server) = warp::serve(router).bind_with_graceful_shutdown(
         config.address,
