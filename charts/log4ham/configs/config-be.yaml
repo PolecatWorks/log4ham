@@ -17,5 +17,4 @@ webservice:
 persistence:
   db:
     pool_size: 10
-    connection:
-      url: postgres://localhost:5432/log4ham
+    connection: {}
