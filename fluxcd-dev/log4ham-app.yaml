@@ -34,13 +34,13 @@ spec:
         repository: ghcr.io/polecatworks/log4ham-be
         tag: main
         pullPolicy: Always
-        configs:
-          persistence:
-            db:
-              connection:
-                url_file: db/url
-                username_file: db/username
-                password_file: db/password
+      configs:
+        persistence:
+          db:
+            connection:
+              url_file: db/url
+              username_file: db/username
+              password_file: db/password
       volumes:
         - name: configs
           configMap:
