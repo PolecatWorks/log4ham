@@ -13,7 +13,7 @@ spec:
   - name: ham4log-be
     match:
       - uri:
-          prefix: /view/v0
+          prefix: /ham4log/v0
     route:
     - destination:
         host: app-log4ham-be

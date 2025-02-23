@@ -1,0 +1,121 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name:  keycloak-admin
+type: Opaque
+data:
+  username: aGFtdXNlcg==   # base64-encoded value of "user"
+  password: aGFtcGFzcw==   # base64-encoded value of "pass"
+---
+apiVersion: v1.edp.epam.com/v1
+kind: Keycloak
+metadata:
+  name: keycloak
+spec:
+  secret: keycloak-admin             # Secret name
+  url: http://keycloak.security.svc.cluster.local/auth/   # Keycloak URL
+  # url: http://service-y.namespace-b.svc.cluster.local   # Keycloak URL
+---
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakRealm
+metadata:
+ name: ham4log
+spec:
+ realmName: ham4log
+ keycloakRef:
+   name: keycloak
+   kind: Keycloak
+---
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakRealmGroup
+metadata:
+  name: ham4log-readers
+spec:
+  realmRef:
+    name: ham4log
+    kind: KeycloakRealm
+  name: Readers
+  clientRoles:
+    - clientId: ham4log-be
+      roles:
+        - read
+---
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakRealmGroup
+metadata:
+  name: writers
+spec:
+  realmRef:
+    name: ham4log
+    kind: KeycloakRealm
+  name: Writers
+  clientRoles:
+    - clientId: ham4log-be
+      roles:
+        - write
+---
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakRealmGroup
+metadata:
+  name: ham4log-admins
+spec:
+  name: Admins
+  realm: ham4log   # the name of `kind: KeycloakRealm
+  clientRoles:
+    - clientId: ham4log-be
+      roles:
+        - read
+        - write
+        - delete
+---
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakClientScope
+metadata:
+  name: client-audience
+spec:
+  name: client-audience
+  realmRef:
+    name: ham4log
+    kind: KeycloakRealm
+  description: Client mappers to audience
+  protocol: openid-connect
+  protocolMappers:
+    - name: ham4log-as-audience
+      protocol: openid-connect
+      protocolMapper: oidc-audience-mapper
+      config:
+        "included.client.audience": app-pie
+        "id.token.claim": "false"
+        "lightweight.claim": "false"
+        "access.token.claim": "true"
+        "introspection.token.claim": "true"
+---
+apiVersion: v1.edp.epam.com/v1
+kind: KeycloakClient
+metadata:
+  name: ham4log-ui
+spec:
+  realmRef:
+    name: ham4log
+    kind: KeycloakRealm
+  advancedProtocolMappers: true
+  clientId: ham4log-ui
+  name: Ham4Log Oauth Client
+  description: "Ham4Log OAuth Client"
+  public: true
+  standardFlowEnabled: true
+  directAccess: true
+  implicitFlowEnabled: true
+  optionalClientScopes:
+    - client-audience
+  # webUrl: https://argocd.example.com
+  # adminUrl: https://admin.example.com
+  # homeUrl: /home/
+  # defaultClientScopes:
+  #   - groups
+  redirectUris:
+    - '*'
+  webOrigins:
+    - '*'
+  #   - /url2/*
