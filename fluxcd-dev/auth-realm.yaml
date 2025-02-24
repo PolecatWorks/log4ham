@@ -5,7 +5,7 @@ metadata:
   name:  keycloak-admin
 type: Opaque
 data:
-  username: aGFtdXNlcg==   # base64-encoded value of "user"
+  username: aGFtYWRtaW4=   # base64-encoded value of "user"
   password: aGFtcGFzcw==   # base64-encoded value of "pass"
 ---
 apiVersion: v1.edp.epam.com/v1
