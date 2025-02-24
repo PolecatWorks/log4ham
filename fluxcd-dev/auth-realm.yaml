@@ -1,22 +1,4 @@
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name:  keycloak-admin
-type: Opaque
-data:
-  username: aGFtYWRtaW4=   # base64-encoded value of "user"
-  password: aGFtcGFzcw==   # base64-encoded value of "pass"
----
-apiVersion: v1.edp.epam.com/v1
-kind: Keycloak
-metadata:
-  name: keycloak
-spec:
-  secret: keycloak-admin             # Secret name
-  url: http://keycloak.security.svc.cluster.local/auth/   # Keycloak URL
-  # url: http://service-y.namespace-b.svc.cluster.local   # Keycloak URL
----
 apiVersion: v1.edp.epam.com/v1
 kind: KeycloakRealm
 metadata:
@@ -25,7 +7,7 @@ spec:
  realmName: ham4log
  keycloakRef:
    name: keycloak
-   kind: Keycloak
+   kind: ClusterKeycloak
 ---
 apiVersion: v1.edp.epam.com/v1
 kind: KeycloakRealmGroup
