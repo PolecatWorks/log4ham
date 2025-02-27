@@ -29,7 +29,7 @@ spec:
         pullPolicy: Always
     be:
       webservice:
-        prefix: /app/v0
+        prefix: /log4ham/v0
       image:
         repository: ghcr.io/polecatworks/log4ham-be
         tag: main
