@@ -14,11 +14,35 @@ spec:
   # secret in which the credentials for the database should be stored (same namespace)
   secretName: log4ham-pg
   # the content of the secret
-  secretsTemplates:
-    CONNECTION_STRING: "{{ .Protocol }}://{{ .UserName }}:{{ .Password }}@{{ .DatabaseHost }}:{{ .DatabasePort }}/{{ .DatabaseName }}"
-    DB_PASS: "{{ .Password }}"
-    DB_USER: "{{ .UserName }}"
-    DB_HOST: "{{ .DatabaseHost }}"
-    DB_PORT: "{{ .DatabasePort }}"
-    DB_NAME: "{{ .DatabaseName }}"
-    DB_TYPE: "{{ .Protocol }}"
+  credentials:
+    templates:
+      - name: CONNECTION_STRING
+        template: "{{ .Protocol }}://{{ .UserName }}:{{ .Password }}@{{ .DatabaseHost }}:{{ .DatabasePort }}/{{ .DatabaseName }}"
+        secret: true
+      - name: DB_PASS
+        template: "{{ .Password }}"
+        secret: true
+      - name: DB_USER
+        template: "{{ .UserName }}"
+        secret: true
+      - name: DB_HOST
+        template: "{{ .DatabaseHost }}"
+        secret: true
+      - name: DB_PORT
+        template: "{{ .DatabasePort }}"
+        secret: true
+      - name: DB_NAME
+        template: "{{ .DatabaseName }}"
+        secret: true
+      - name: DB_TYPE
+        template: "{{ .Protocol }}"
+        secret: true
+
+  # secretsTemplates:
+  #   CONNECTION_STRING: "{{ .Protocol }}://{{ .UserName }}:{{ .Password }}@{{ .DatabaseHost }}:{{ .DatabasePort }}/{{ .DatabaseName }}"
+  #   DB_PASS: "{{ .Password }}"
+  #   DB_USER: "{{ .UserName }}"
+  #   DB_HOST: "{{ .DatabaseHost }}"
+  #   DB_PORT: "{{ .DatabasePort }}"
+  #   DB_NAME: "{{ .DatabaseName }}"
+  #   DB_TYPE: "{{ .Protocol }}"
