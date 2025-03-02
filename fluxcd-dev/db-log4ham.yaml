@@ -17,7 +17,7 @@ spec:
   credentials:
     templates:
       - name: CONNECTION_STRING
-        template: "{{ .Protocol }}://{{ .Username }}:{{ .Password }}@{{ .Host }}:{{ .Port }}/{{ .Database }}"
+        template: "{{ .Protocol }}://{{ .Username }}:{{ .Password }}@{{ .Hostname }}:{{ .Port }}/{{ .Database }}"
         secret: true
       - name: DB_PASS
         template: "{{ .Password }}"
