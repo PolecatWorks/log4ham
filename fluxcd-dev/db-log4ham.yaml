@@ -17,22 +17,22 @@ spec:
   credentials:
     templates:
       - name: CONNECTION_STRING
-        template: "{{ .Protocol }}://{{ .UserName }}:{{ .Password }}@{{ .DatabaseHost }}:{{ .DatabasePort }}/{{ .DatabaseName }}"
+        template: "{{ .Protocol }}://{{ .Username }}:{{ .Password }}@{{ .Host }}:{{ .Port }}/{{ .Database }}"
         secret: true
       - name: DB_PASS
         template: "{{ .Password }}"
         secret: true
       - name: DB_USER
-        template: "{{ .UserName }}"
+        template: "{{ .Username }}"
         secret: true
       - name: DB_HOST
-        template: "{{ .DatabaseHost }}"
+        template: "{{ .Host }}"
         secret: true
       - name: DB_PORT
-        template: "{{ .DatabasePort }}"
+        template: "{{ .Port }}"
         secret: true
       - name: DB_NAME
-        template: "{{ .DatabaseName }}"
+        template: "{{ .Database }}"
         secret: true
       - name: DB_TYPE
         template: "{{ .Protocol }}"
