@@ -6,9 +6,7 @@ use env_logger::Env;
 use log4ham::{
     app_schema::{
         schema_person_string, schema_string, write_records, Person,
-    },
-    error::MyError,
-    webserver::service_start,
+    }, error::MyError, persistence::db_check, webserver::service_start
 };
 use log::info;
 
@@ -104,6 +102,7 @@ fn main() -> Result<(), MyError> {
             info!("Loaded config {:#?}", config);
 
 
+            db_check(config.persistence)?;
 
             // println!("got an object store {:#?}", ben);
 
@@ -117,7 +116,7 @@ fn main() -> Result<(), MyError> {
 
             let config: MyConfig = MyConfig::figment(config, secrets).extract()?;
 
-            info!("Loaded config {:?}", config);
+            info!("Loaded config {:#?}", config);
         }
     }
 
