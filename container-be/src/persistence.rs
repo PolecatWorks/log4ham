@@ -5,7 +5,6 @@ use serde::Deserialize;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio_util::sync::CancellationToken;
 use url::Url;
-use sqlx::Row;
 
 use crate::{error::MyError, tokio_tools::run_in_tokio, UrlWithUsernamePassword};
 
@@ -78,8 +77,6 @@ pub async fn db_cancellable(ct: CancellationToken, config: PersistenceConfig) ->
 
     Ok(())
 }
-
-
 
 
 pub fn db_check(config: PersistenceConfig) -> Result<(), MyError> {

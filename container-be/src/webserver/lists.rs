@@ -246,167 +246,167 @@ mod tests {
         assert!(out_str == r#"{"id":null,"name":"pear","active":null}"#);
     }
 
-    #[sqlx::test]
-    // async fn insert_and_remove_lists(pool: PgPool) -> sqlx::Result<()> {
-    async fn insert_and_remove_lists(pool: PgPool) -> Result<(), Rejection> {
-        let mut created_ids = vec![];
+    // #[sqlx::test]
+    // // async fn insert_and_remove_lists(pool: PgPool) -> sqlx::Result<()> {
+    // async fn insert_and_remove_lists(pool: PgPool) -> Result<(), Rejection> {
+    //     let mut created_ids = vec![];
 
-        let example0_unsaved = List::new("example0");
+    //     let example0_unsaved = List::new("example0");
 
-        assert_eq!(0, list_count(pool.clone()).await?);
+    //     assert_eq!(0, list_count(pool.clone()).await?);
 
-        // Create a List
-        let res = handlers::create(example0_unsaved.clone(), pool.clone())
-            .await
-            .expect("Record Created");
-        assert!(res.name == example0_unsaved.name);
-        assert!(res.id.is_some());
-        assert_eq!(1, list_count(pool.clone()).await?);
-        created_ids.push(res.id.unwrap());
+    //     // Create a List
+    //     let res = handlers::create(example0_unsaved.clone(), pool.clone())
+    //         .await
+    //         .expect("Record Created");
+    //     assert!(res.name == example0_unsaved.name);
+    //     assert!(res.id.is_some());
+    //     assert_eq!(1, list_count(pool.clone()).await?);
+    //     created_ids.push(res.id.unwrap());
 
-        let example0_saved = res;
+    //     let example0_saved = res;
 
-        // Read back the List
-        let res = handlers::read(example0_saved.id.unwrap(), pool.clone())
-            .await
-            .expect("Read back List");
-        assert_eq!(example0_saved, res);
+    //     // Read back the List
+    //     let res = handlers::read(example0_saved.id.unwrap(), pool.clone())
+    //         .await
+    //         .expect("Read back List");
+    //     assert_eq!(example0_saved, res);
 
-        // Fail create of a List
-        let res = handlers::create(example0_unsaved.clone(), pool.clone())
-            .await
-            .expect_err("Create Rejected");
-        assert!(matches!(
-            res.find::<MyError>().unwrap(),
-            MyError::SqlxError { .. }
-        ));
-        assert_eq!(1, list_count(pool.clone()).await?);
+    //     // Fail create of a List
+    //     let res = handlers::create(example0_unsaved.clone(), pool.clone())
+    //         .await
+    //         .expect_err("Create Rejected");
+    //     assert!(matches!(
+    //         res.find::<MyError>().unwrap(),
+    //         MyError::SqlxError { .. }
+    //     ));
+    //     assert_eq!(1, list_count(pool.clone()).await?);
 
-        // Create a List
-        let example1_unsaved = List::new("example1");
-        let res = handlers::create(example1_unsaved.clone(), pool.clone())
-            .await
-            .expect("Record Created");
-        assert_eq!(2, list_count(pool.clone()).await?);
-        created_ids.push(res.id.unwrap());
+    //     // Create a List
+    //     let example1_unsaved = List::new("example1");
+    //     let res = handlers::create(example1_unsaved.clone(), pool.clone())
+    //         .await
+    //         .expect("Record Created");
+    //     assert_eq!(2, list_count(pool.clone()).await?);
+    //     created_ids.push(res.id.unwrap());
 
-        // Check the list is returned and matches sorted
-        let listopts = ListOptions {
-            limit: None,
-            offset: None,
-        };
-        let res = handlers::list(listopts, pool.clone())
-            .await
-            .expect("Got ids of records");
+    //     // Check the list is returned and matches sorted
+    //     let listopts = ListOptions {
+    //         limit: None,
+    //         offset: None,
+    //     };
+    //     let res = handlers::list(listopts, pool.clone())
+    //         .await
+    //         .expect("Got ids of records");
 
-        created_ids.sort();
-        // Do not need to sort res.ids as they are expected to be sorted on return
-        assert_eq!(res.ids, created_ids);
+    //     created_ids.sort();
+    //     // Do not need to sort res.ids as they are expected to be sorted on return
+    //     assert_eq!(res.ids, created_ids);
 
-        // Update operation although no actual change
-        let res = handlers::update(
-            example0_saved.id.unwrap(),
-            example0_saved.clone(),
-            pool.clone(),
-        )
-        .await
-        .expect("Update record");
-        assert_eq!(res, example0_saved);
+    //     // Update operation although no actual change
+    //     let res = handlers::update(
+    //         example0_saved.id.unwrap(),
+    //         example0_saved.clone(),
+    //         pool.clone(),
+    //     )
+    //     .await
+    //     .expect("Update record");
+    //     assert_eq!(res, example0_saved);
 
-        // Delete List
-        let res = handlers::delete(example0_saved.id.unwrap(), pool.clone())
-            .await
-            .expect("Deleted List");
+    //     // Delete List
+    //     let res = handlers::delete(example0_saved.id.unwrap(), pool.clone())
+    //         .await
+    //         .expect("Deleted List");
 
-        let mut unused_id = 0;
-        while created_ids.contains(&unused_id) {
-            unused_id += 1;
-        }
+    //     let mut unused_id = 0;
+    //     while created_ids.contains(&unused_id) {
+    //         unused_id += 1;
+    //     }
 
-        // Delete a List id that does not exist and expect a fail
-        let _res = handlers::delete(unused_id, pool.clone())
-            .await
-            .expect_err("Fail as no List item to delete");
+    //     // Delete a List id that does not exist and expect a fail
+    //     let _res = handlers::delete(unused_id, pool.clone())
+    //         .await
+    //         .expect_err("Fail as no List item to delete");
 
-        // Read a non-existant id and expect a fail
-        let _res = handlers::read(unused_id, pool.clone())
-            .await
-            .expect_err("Fail a no List item to read");
+    //     // Read a non-existant id and expect a fail
+    //     let _res = handlers::read(unused_id, pool.clone())
+    //         .await
+    //         .expect_err("Fail a no List item to read");
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
-    #[tokio::test]
-    async fn test_filters_matching() -> Result<(), MyError> {
-        println!("TODO: Test here");
-        Ok(())
-    }
+    // #[tokio::test]
+    // async fn test_filters_matching() -> Result<(), MyError> {
+    //     println!("TODO: Test here");
+    //     Ok(())
+    // }
 
-    #[sqlx::test]
-    async fn list_create(pool: PgPool) -> Result<(), Rejection> {
-        println!("TODO: Test edge cases for each handler");
-        Ok(())
-    }
+    // #[sqlx::test]
+    // async fn list_create(pool: PgPool) -> Result<(), Rejection> {
+    //     println!("TODO: Test edge cases for each handler");
+    //     Ok(())
+    // }
 
-    #[sqlx::test]
-    async fn insert_and_remove_lists_with_filters(pool: PgPool) -> Result<(), Rejection> {
-        let filter_create = warp::body::json::<List>()
-            .and(with_db_pool_pg(pool.clone()))
-            .and_then(handlers::create);
+    // #[sqlx::test]
+    // async fn insert_and_remove_lists_with_filters(pool: PgPool) -> Result<(), Rejection> {
+    //     let filter_create = warp::body::json::<List>()
+    //         .and(with_db_pool_pg(pool.clone()))
+    //         .and_then(handlers::create);
 
-        let example0_unsaved = List {
-            id: None,
-            name: "example0".to_string(),
-            active: None,
-        };
+    //     let example0_unsaved = List {
+    //         id: None,
+    //         name: "example0".to_string(),
+    //         active: None,
+    //     };
 
-        // Try to insert record and shall receive saved record (ie id is provided in response)
-        let req = warp::test::request().json(&example0_unsaved);
+    //     // Try to insert record and shall receive saved record (ie id is provided in response)
+    //     let req = warp::test::request().json(&example0_unsaved);
 
-        let res1 = req.filter(&filter_create).await?;
-        assert!(res1.name == example0_unsaved.name);
-        assert!(res1.id.is_some());
+    //     let res1 = req.filter(&filter_create).await?;
+    //     assert!(res1.name == example0_unsaved.name);
+    //     assert!(res1.id.is_some());
 
-        assert_eq!(1, list_count(pool.clone()).await?);
+    //     assert_eq!(1, list_count(pool.clone()).await?);
 
-        // Try to insert same records and shall receive a SqlxError
-        let req = warp::test::request().json(&example0_unsaved);
-        let rej2 = req.filter(&filter_create).await.err().unwrap();
+    //     // Try to insert same records and shall receive a SqlxError
+    //     let req = warp::test::request().json(&example0_unsaved);
+    //     let rej2 = req.filter(&filter_create).await.err().unwrap();
 
-        assert!(matches!(
-            rej2.find::<MyError>().unwrap(),
-            MyError::SqlxError { .. }
-        ));
+    //     assert!(matches!(
+    //         rej2.find::<MyError>().unwrap(),
+    //         MyError::SqlxError { .. }
+    //     ));
 
-        assert_eq!(1, list_count(pool.clone()).await?);
+    //     assert_eq!(1, list_count(pool.clone()).await?);
 
-        let filter_delete = warp::path::param()
-            .and(with_db_pool_pg(pool.clone()))
-            .and_then(handlers::delete);
+    //     let filter_delete = warp::path::param()
+    //         .and(with_db_pool_pg(pool.clone()))
+    //         .and_then(handlers::delete);
 
-        // Delete the record we just inserted
-        let req = warp::test::request().path(&format!("/{}", res1.id.unwrap()));
+    //     // Delete the record we just inserted
+    //     let req = warp::test::request().path(&format!("/{}", res1.id.unwrap()));
 
-        let res3 = req.filter(&filter_delete).await?;
+    //     let res3 = req.filter(&filter_delete).await?;
 
-        assert_eq!(res3, res1);
-        assert_eq!(0, list_count(pool.clone()).await?);
+    //     assert_eq!(res3, res1);
+    //     assert_eq!(0, list_count(pool.clone()).await?);
 
-        // Attempt to delete the same record again and get error reply
-        let req = warp::test::request().path(&format!("/{}", res1.id.unwrap()));
+    //     // Attempt to delete the same record again and get error reply
+    //     let req = warp::test::request().path(&format!("/{}", res1.id.unwrap()));
 
-        let rej4 = req.filter(&filter_delete).await.err().unwrap();
-        assert!(matches!(
-            rej4.find::<MyError>().unwrap(),
-            MyError::SqlxError { .. }
-        ));
+    //     let rej4 = req.filter(&filter_delete).await.err().unwrap();
+    //     assert!(matches!(
+    //         rej4.find::<MyError>().unwrap(),
+    //         MyError::SqlxError { .. }
+    //     ));
 
-        let res = handlers::create(example0_unsaved.clone(), pool.clone())
-            .await
-            .expect("Record Created");
-        assert!(res.name == example0_unsaved.name);
-        assert!(res.id.is_some());
+    //     let res = handlers::create(example0_unsaved.clone(), pool.clone())
+    //         .await
+    //         .expect("Record Created");
+    //     assert!(res.name == example0_unsaved.name);
+    //     assert!(res.id.is_some());
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 }

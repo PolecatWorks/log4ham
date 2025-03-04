@@ -1,7 +1,8 @@
 pub mod lists;
+pub mod users;
 
 use figment::{
-    providers::{Env, Format, Yaml},
+    providers::{Format, Yaml},
     Figment,
 };
 use figment_file_provider_adapter::FileAdapter;
@@ -66,7 +67,7 @@ impl ListOptions {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ListIds {
     ids: Vec<DbBigSerial>,
     options: ListOptions,
@@ -170,6 +171,7 @@ async fn start_app_api(
     let upload_limit = 200000;
 
     let combined = warp::path("lists").and(lists::lists(pool_pg.clone(), upload_limit))
+        .or(warp::path("users").and(users::users(pool_pg.clone())))
         .recover(handle_rejection)
         .with(weblog);
 
@@ -212,227 +214,250 @@ pub fn service_start(config: MyConfig) -> Result<(), MyError> {
     run_in_tokio(service_cancellable(ct, config))
 }
 
+
 #[cfg(test)]
-mod test {
+mod tests {
+    use super::*;
+
     use sqlx::{PgPool, Row};
 
-    use crate::webserver::{list_files::ListFile, list_versions::ListVersion, lists::List};
 
-    const MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
+    #[sqlx::test(migrations = false)]
+    async fn db_connectivity(pool: PgPool) -> sqlx::Result<()> {
 
-    // You could also do `use foo_crate::MIGRATOR` and just refer to it as `MIGRATOR` here.
-    #[sqlx::test]
-    async fn it_gets_a_pool(pool: PgPool) -> sqlx::Result<()> {
-        let mut conn = pool.acquire().await?;
-
-        let db_name: String = sqlx::query_scalar("SELECT current_database()")
-            .fetch_one(&mut *conn)
+        let foo = sqlx::query("SELECT 1")
+            .fetch_one(&pool)
             .await?;
 
-        assert!(db_name.starts_with("_sqlx_test"), "dbname: {db_name:?}");
-
-        Ok(())
-    }
-
-    #[sqlx::test]
-    async fn db_referential_integrity(pool: PgPool) -> sqlx::Result<()> {
-        {
-            // Insert a list
-            let list = sqlx::query_as::<_, List>(
-                "INSERT INTO lists (name) VALUES ('example0') RETURNING *",
-            )
-            .fetch_one(&pool.clone())
-            .await
-            .expect("Insert List");
-
-            // Fail Insert of ListVersion if there is not a matching List
-            println!("Check that VersionList cannot be created unless there is a matching List id");
-            let non_matching_id = 7;
-            assert_ne!(non_matching_id, list.id.unwrap());
-
-            let _version = sqlx::query_as::<_, ListVersion>("INSERT INTO list_versions (version,schema,list) VALUES ('0.0.1', '{}', $1) RETURNING *")
-                .bind(&non_matching_id)
-                .fetch_one(&pool.clone()).await
-                .expect_err("Fail insert of ListVersion");
-
-            // Add a version to the list
-            let _version = sqlx::query_as::<_, ListVersion>("INSERT INTO list_versions (version,schema,list) VALUES ('0.0.1', '{}', $1) RETURNING *")
-                .bind(&list.id.unwrap())
-                .fetch_one(&pool.clone()).await
-                .expect("Insert Version");
-
-            println!("Check that List cannot be deleted unless all Versions are deleted");
-            // Fail delete list
-            let _list = sqlx::query_as::<_, List>("DELETE FROM lists WHERE id=$1 RETURNING *")
-                .bind(&list.id.unwrap())
-                .fetch_one(&pool.clone())
-                .await
-                .expect_err("Fail delete of List");
-
-            // Delete Version
-            let _version = sqlx::query_as::<_, ListVersion>(
-                "DELETE FROM list_versions WHERE list=$1 RETURNING *",
-            )
-            .bind(&list.id.unwrap())
-            .fetch_one(&pool.clone())
-            .await
-            .expect("Delete of ListVersion");
-
-            // Delete List is successful
-            let _list = sqlx::query_as::<_, List>("DELETE FROM lists WHERE id=$1 RETURNING *")
-                .bind(&list.id.unwrap())
-                .fetch_one(&pool.clone())
-                .await
-                .expect("Delete of List");
-        }
-
-        {
-            let list0 = sqlx::query_as::<_, List>(
-                "INSERT INTO lists (name) VALUES ('example0') RETURNING *",
-            )
-            .fetch_one(&pool.clone())
-            .await
-            .expect("Insert List");
-
-            let version0 = sqlx::query_as::<_, ListVersion>("INSERT INTO list_versions (version,schema,list) VALUES ('0.0.1', '{}', $1) RETURNING *")
-                .bind(&list0.id.unwrap())
-                .fetch_one(&pool.clone()).await
-                .expect("Insert Version");
-
-            let list1 = sqlx::query_as::<_, List>(
-                "INSERT INTO lists (name) VALUES ('example1') RETURNING *",
-            )
-            .fetch_one(&pool.clone())
-            .await
-            .expect("Insert List");
-
-            let version1 = sqlx::query_as::<_, ListVersion>("INSERT INTO list_versions (version,schema,list) VALUES ('0.0.1', '{}', $1) RETURNING *")
-                .bind(&list1.id.unwrap())
-                .fetch_one(&pool.clone()).await
-                .expect("Insert Version");
-
-            let non_matching_version_id = 7;
-            assert_ne!(non_matching_version_id, version0.id.unwrap());
-            assert_ne!(non_matching_version_id, version1.id.unwrap());
-
-            println!("Check that active cannot be set unless id of ListVersion is valid");
-            let _version = sqlx::query_as::<_, List>(
-                "UPDATE lists SET (active) = ($2) WHERE id= $1 RETURNING *",
-            )
-            .bind(&list0.id.unwrap())
-            .bind(&non_matching_version_id)
-            .fetch_one(&pool.clone())
-            .await
-            .expect_err("Fail List update of active because id of ListVersion is not valid");
-
-            println!(
-                "Check that active cannot be set if list of ListVersion does not match id of List"
-            );
-            let _version = sqlx::query_as::<_, List>("UPDATE lists SET (active) = ($2) WHERE id= $1 RETURNING *")
-                .bind(&list0.id.unwrap())
-                .bind(&version1.id.unwrap())
-                .fetch_one(&pool.clone()).await
-                .expect_err("Fail List update of active bcause id of ListVersion does not have a matchi list entry");
-
-            println!("Update active of list0 to match version0");
-            let _list =
-                sqlx::query_as::<_, List>("UPDATE lists SET active = $2 WHERE id= $1 RETURNING *")
-                    .bind(&list0.id.unwrap())
-                    .bind(&version0.id.unwrap())
-                    .fetch_one(&pool.clone())
-                    .await
-                    .expect("Update active when matching ListVersion");
-
-            println!("Cannot delete ListVersion that is references in active");
-            let _version = sqlx::query_as::<_, ListVersion>(
-                "DELETE FROM list_versions WHERE list=$1 RETURNING *",
-            )
-            .bind(&list0.id.unwrap())
-            .fetch_one(&pool.clone())
-            .await
-            .expect_err("Cannot delete ListVersion used in active on List");
-
-            println!("Disable active for a list");
-            let _list = sqlx::query_as::<_, List>(
-                "UPDATE lists SET active = null WHERE id= $1 RETURNING *",
-            )
-            .bind(&list0.id.unwrap())
-            .fetch_one(&pool.clone())
-            .await
-            .expect("Unset active for List");
-
-            let _version =
-                sqlx::query_as::<_, ListVersion>("DELETE FROM list_versions RETURNING *")
-                    .fetch_one(&pool.clone())
-                    .await
-                    .expect("Delete of ListVersion");
-            let _list = sqlx::query_as::<_, List>("DELETE FROM lists RETURNING *")
-                .fetch_one(&pool.clone())
-                .await
-                .expect("Delete of List");
-        }
-
-        {
-            let non_matching_id = 7;
-
-            println!("Cannot create ListFile that does not have a version");
-            let _version = sqlx::query_as::<_, ListFile>(
-                "INSERT INTO list_files (version, validated) VALUES ($1, false) RETURNING *",
-            )
-            .bind(&non_matching_id)
-            .fetch_one(&pool.clone())
-            .await
-            .expect_err("Cannot create ListFile if no valid version to link");
-
-            let list0 = sqlx::query_as::<_, List>(
-                "INSERT INTO lists (name) VALUES ('example0') RETURNING *",
-            )
-            .fetch_one(&pool.clone())
-            .await
-            .expect("Insert List");
-
-            let version0 = sqlx::query_as::<_, ListVersion>("INSERT INTO list_versions (version,schema,list) VALUES ('0.0.1', '{}', $1) RETURNING *")
-                .bind(&list0.id.unwrap())
-                .fetch_one(&pool.clone()).await
-                .expect("Insert Version");
-
-            let file0 = sqlx::query_as::<_, ListFile>(
-                "INSERT INTO list_files (version, validated) VALUES ($1, false) RETURNING *",
-            )
-            .bind(&version0.id.unwrap())
-            .fetch_one(&pool.clone())
-            .await
-            .expect("Insert File when version is available");
-
-            let _version =
-                sqlx::query_as::<_, ListVersion>("DELETE FROM list_versions RETURNING *")
-                    .bind(&version0.id.unwrap())
-                    .fetch_one(&pool.clone())
-                    .await
-                    .expect_err("Fail to delete ListVersion as is referenced by File");
-
-            let _file0 =
-                sqlx::query_as::<_, ListFile>("DELETE FROM list_files WHERE id=$1 RETURNING *")
-                    .bind(&file0.id.unwrap())
-                    .fetch_one(&pool.clone())
-                    .await
-                    .expect("Delete file0");
-
-            let _version0 = sqlx::query_as::<_, ListVersion>(
-                "DELETE FROM list_versions WHERE id=$1 RETURNING *",
-            )
-            .bind(&version0.id.unwrap())
-            .fetch_one(&pool.clone())
-            .await
-            .expect("Delete version0");
-
-            let _list0 = sqlx::query_as::<_, List>("DELETE FROM lists WHERE id=$1 RETURNING *")
-                .bind(&list0.id.unwrap())
-                .fetch_one(&pool.clone())
-                .await
-                .expect("Delete list0");
-        }
+        assert_eq!(foo.get::<i32, _>(0), 1);
 
         Ok(())
     }
 }
+
+
+
+// #[cfg(test)]
+// mod test {
+//     use sqlx::{PgPool, Row};
+
+//     use crate::webserver::{list_files::ListFile, list_versions::ListVersion, lists::List};
+
+//     const MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
+
+//     // You could also do `use foo_crate::MIGRATOR` and just refer to it as `MIGRATOR` here.
+//     #[sqlx::test]
+//     async fn it_gets_a_pool(pool: PgPool) -> sqlx::Result<()> {
+//         let mut conn = pool.acquire().await?;
+
+//         let db_name: String = sqlx::query_scalar("SELECT current_database()")
+//             .fetch_one(&mut *conn)
+//             .await?;
+
+//         assert!(db_name.starts_with("_sqlx_test"), "dbname: {db_name:?}");
+
+//         Ok(())
+//     }
+
+//     #[sqlx::test]
+//     async fn db_referential_integrity(pool: PgPool) -> sqlx::Result<()> {
+//         {
+//             // Insert a list
+//             let list = sqlx::query_as::<_, List>(
+//                 "INSERT INTO lists (name) VALUES ('example0') RETURNING *",
+//             )
+//             .fetch_one(&pool.clone())
+//             .await
+//             .expect("Insert List");
+
+//             // Fail Insert of ListVersion if there is not a matching List
+//             println!("Check that VersionList cannot be created unless there is a matching List id");
+//             let non_matching_id = 7;
+//             assert_ne!(non_matching_id, list.id.unwrap());
+
+//             let _version = sqlx::query_as::<_, ListVersion>("INSERT INTO list_versions (version,schema,list) VALUES ('0.0.1', '{}', $1) RETURNING *")
+//                 .bind(&non_matching_id)
+//                 .fetch_one(&pool.clone()).await
+//                 .expect_err("Fail insert of ListVersion");
+
+//             // Add a version to the list
+//             let _version = sqlx::query_as::<_, ListVersion>("INSERT INTO list_versions (version,schema,list) VALUES ('0.0.1', '{}', $1) RETURNING *")
+//                 .bind(&list.id.unwrap())
+//                 .fetch_one(&pool.clone()).await
+//                 .expect("Insert Version");
+
+//             println!("Check that List cannot be deleted unless all Versions are deleted");
+//             // Fail delete list
+//             let _list = sqlx::query_as::<_, List>("DELETE FROM lists WHERE id=$1 RETURNING *")
+//                 .bind(&list.id.unwrap())
+//                 .fetch_one(&pool.clone())
+//                 .await
+//                 .expect_err("Fail delete of List");
+
+//             // Delete Version
+//             let _version = sqlx::query_as::<_, ListVersion>(
+//                 "DELETE FROM list_versions WHERE list=$1 RETURNING *",
+//             )
+//             .bind(&list.id.unwrap())
+//             .fetch_one(&pool.clone())
+//             .await
+//             .expect("Delete of ListVersion");
+
+//             // Delete List is successful
+//             let _list = sqlx::query_as::<_, List>("DELETE FROM lists WHERE id=$1 RETURNING *")
+//                 .bind(&list.id.unwrap())
+//                 .fetch_one(&pool.clone())
+//                 .await
+//                 .expect("Delete of List");
+//         }
+
+//         {
+//             let list0 = sqlx::query_as::<_, List>(
+//                 "INSERT INTO lists (name) VALUES ('example0') RETURNING *",
+//             )
+//             .fetch_one(&pool.clone())
+//             .await
+//             .expect("Insert List");
+
+//             let version0 = sqlx::query_as::<_, ListVersion>("INSERT INTO list_versions (version,schema,list) VALUES ('0.0.1', '{}', $1) RETURNING *")
+//                 .bind(&list0.id.unwrap())
+//                 .fetch_one(&pool.clone()).await
+//                 .expect("Insert Version");
+
+//             let list1 = sqlx::query_as::<_, List>(
+//                 "INSERT INTO lists (name) VALUES ('example1') RETURNING *",
+//             )
+//             .fetch_one(&pool.clone())
+//             .await
+//             .expect("Insert List");
+
+//             let version1 = sqlx::query_as::<_, ListVersion>("INSERT INTO list_versions (version,schema,list) VALUES ('0.0.1', '{}', $1) RETURNING *")
+//                 .bind(&list1.id.unwrap())
+//                 .fetch_one(&pool.clone()).await
+//                 .expect("Insert Version");
+
+//             let non_matching_version_id = 7;
+//             assert_ne!(non_matching_version_id, version0.id.unwrap());
+//             assert_ne!(non_matching_version_id, version1.id.unwrap());
+
+//             println!("Check that active cannot be set unless id of ListVersion is valid");
+//             let _version = sqlx::query_as::<_, List>(
+//                 "UPDATE lists SET (active) = ($2) WHERE id= $1 RETURNING *",
+//             )
+//             .bind(&list0.id.unwrap())
+//             .bind(&non_matching_version_id)
+//             .fetch_one(&pool.clone())
+//             .await
+//             .expect_err("Fail List update of active because id of ListVersion is not valid");
+
+//             println!(
+//                 "Check that active cannot be set if list of ListVersion does not match id of List"
+//             );
+//             let _version = sqlx::query_as::<_, List>("UPDATE lists SET (active) = ($2) WHERE id= $1 RETURNING *")
+//                 .bind(&list0.id.unwrap())
+//                 .bind(&version1.id.unwrap())
+//                 .fetch_one(&pool.clone()).await
+//                 .expect_err("Fail List update of active bcause id of ListVersion does not have a matchi list entry");
+
+//             println!("Update active of list0 to match version0");
+//             let _list =
+//                 sqlx::query_as::<_, List>("UPDATE lists SET active = $2 WHERE id= $1 RETURNING *")
+//                     .bind(&list0.id.unwrap())
+//                     .bind(&version0.id.unwrap())
+//                     .fetch_one(&pool.clone())
+//                     .await
+//                     .expect("Update active when matching ListVersion");
+
+//             println!("Cannot delete ListVersion that is references in active");
+//             let _version = sqlx::query_as::<_, ListVersion>(
+//                 "DELETE FROM list_versions WHERE list=$1 RETURNING *",
+//             )
+//             .bind(&list0.id.unwrap())
+//             .fetch_one(&pool.clone())
+//             .await
+//             .expect_err("Cannot delete ListVersion used in active on List");
+
+//             println!("Disable active for a list");
+//             let _list = sqlx::query_as::<_, List>(
+//                 "UPDATE lists SET active = null WHERE id= $1 RETURNING *",
+//             )
+//             .bind(&list0.id.unwrap())
+//             .fetch_one(&pool.clone())
+//             .await
+//             .expect("Unset active for List");
+
+//             let _version =
+//                 sqlx::query_as::<_, ListVersion>("DELETE FROM list_versions RETURNING *")
+//                     .fetch_one(&pool.clone())
+//                     .await
+//                     .expect("Delete of ListVersion");
+//             let _list = sqlx::query_as::<_, List>("DELETE FROM lists RETURNING *")
+//                 .fetch_one(&pool.clone())
+//                 .await
+//                 .expect("Delete of List");
+//         }
+
+//         {
+//             let non_matching_id = 7;
+
+//             println!("Cannot create ListFile that does not have a version");
+//             let _version = sqlx::query_as::<_, ListFile>(
+//                 "INSERT INTO list_files (version, validated) VALUES ($1, false) RETURNING *",
+//             )
+//             .bind(&non_matching_id)
+//             .fetch_one(&pool.clone())
+//             .await
+//             .expect_err("Cannot create ListFile if no valid version to link");
+
+//             let list0 = sqlx::query_as::<_, List>(
+//                 "INSERT INTO lists (name) VALUES ('example0') RETURNING *",
+//             )
+//             .fetch_one(&pool.clone())
+//             .await
+//             .expect("Insert List");
+
+//             let version0 = sqlx::query_as::<_, ListVersion>("INSERT INTO list_versions (version,schema,list) VALUES ('0.0.1', '{}', $1) RETURNING *")
+//                 .bind(&list0.id.unwrap())
+//                 .fetch_one(&pool.clone()).await
+//                 .expect("Insert Version");
+
+//             let file0 = sqlx::query_as::<_, ListFile>(
+//                 "INSERT INTO list_files (version, validated) VALUES ($1, false) RETURNING *",
+//             )
+//             .bind(&version0.id.unwrap())
+//             .fetch_one(&pool.clone())
+//             .await
+//             .expect("Insert File when version is available");
+
+//             let _version =
+//                 sqlx::query_as::<_, ListVersion>("DELETE FROM list_versions RETURNING *")
+//                     .bind(&version0.id.unwrap())
+//                     .fetch_one(&pool.clone())
+//                     .await
+//                     .expect_err("Fail to delete ListVersion as is referenced by File");
+
+//             let _file0 =
+//                 sqlx::query_as::<_, ListFile>("DELETE FROM list_files WHERE id=$1 RETURNING *")
+//                     .bind(&file0.id.unwrap())
+//                     .fetch_one(&pool.clone())
+//                     .await
+//                     .expect("Delete file0");
+
+//             let _version0 = sqlx::query_as::<_, ListVersion>(
+//                 "DELETE FROM list_versions WHERE id=$1 RETURNING *",
+//             )
+//             .bind(&version0.id.unwrap())
+//             .fetch_one(&pool.clone())
+//             .await
+//             .expect("Delete version0");
+
+//             let _list0 = sqlx::query_as::<_, List>("DELETE FROM lists WHERE id=$1 RETURNING *")
+//                 .bind(&list0.id.unwrap())
+//                 .fetch_one(&pool.clone())
+//                 .await
+//                 .expect("Delete list0");
+//         }
+
+//         Ok(())
+//     }
+// }

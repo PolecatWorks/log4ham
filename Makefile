@@ -91,12 +91,10 @@ pg-schema-run:
 pg-schema-revert:
 	@cd container-be && sqlx migrate revert --database-url postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
 
-
-
-watch: export DATABASE_URL=postgres://postgres:mypw@localhost/postgres
-watch:
-	cargo watch --ignore test_data -x "test ${TEST} -- --nocapture"
-
+pg-test-container:
+	kubectl run -it --rm pg-test-pod --image=postgres:17.4 --env="POSTGRES_USER=${PG_USER}" --env="POSTGRES_PASSWORD=${PGPASSWORD}" --env="POSTGRES_DB=${PG_NAME}" --port=5432
+pg-test-forward:
+	kubectl port-forward pod/pg-test-pod 5432:5432
 
 bench: export DATABASE_URL=postgres://myuser:mypass@localhost/mydb
 bench:
@@ -109,6 +107,8 @@ watch-db-check:
 watch-config-check:
 	cd ${BE_DIR} && cargo watch -x "run -- config-check --config test-data/config-localhost.yaml --secrets test-data/secrets"
 
+watch-test:
+	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch --ignore test_data -x "test -- --nocapture"
 
 watch-run:
 	cargo watch -x "run -- receive --config test_data/myconfig.yaml"
