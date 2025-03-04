@@ -237,7 +237,6 @@ mod tests {
 
         let my_list: List = serde_json::from_value(in_value).unwrap();
 
-        println!("myTest = {:?}", my_list);
         assert!(my_list.name == "pear");
         assert!(my_list.id == None && my_list.active == None);
 

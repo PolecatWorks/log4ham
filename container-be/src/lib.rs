@@ -144,7 +144,6 @@ mod test {
 
     #[test]
     fn try_out_enum() {
-        println!("Try me out");
 
         let temp_url = UrlWithUsernamePassword {
             url: Url::parse("postgres://myuser:mypass@localhost/mydb").unwrap(),
