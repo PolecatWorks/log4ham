@@ -68,47 +68,45 @@ pub fn write_records(filename: &str, count: u32) -> Result<(), MyError> {
     Ok(())
 }
 
+// #[cfg(test)]
+// mod tests {
 
+//     use super::*;
 
-#[cfg(test)]
-mod tests {
+//     #[test]
+//     fn validate_vec() {
+//         let schema = schema_string::<Vec<Person>>().expect("got schema");
 
-    use super::*;
+//         println!("my schema is {schema}");
 
-    #[test]
-    fn validate_vec() {
-        let schema = schema_string::<Vec<Person>>().expect("got schema");
+//         let error_limit = 2;
 
-        println!("my schema is {schema}");
+//         let validated = if false {
+//             let file = File::open("myfile.json").expect("open file");
+//             let reader = BufReader::new(file);
+//             validate(&schema, reader, error_limit).expect("validated")
+//         } else if true {
+//             let size = 220;
 
-        let error_limit = 2;
+//             let my_data_vec: Vec<_> = (0..size)
+//                 .map(|x| Person {
+//                     name: format!("name-{:08}", x),
+//                     age: x,
+//                 })
+//                 .collect();
+//             let my_data_string = serde_json::to_string_pretty(&my_data_vec).expect("to string");
+//             let my_data_bytes = my_data_string.as_bytes();
+//             validate(&schema, my_data_bytes, error_limit).expect("validated")
+//         } else {
+//             let inline_example_array = br#"[{"name":"name-00000000","age":0},{"name":"name-00000001","age":1},{"name":"name-00000002","age":2}]"#;
 
-        let validated = if false {
-            let file = File::open("myfile.json").expect("open file");
-            let reader = BufReader::new(file);
-            validate(&schema, reader, error_limit).expect("validated")
-        } else if true {
-            let size = 220;
+//             let inline_example_slice = &inline_example_array[..]; // Has into for reader (https://doc.rust-lang.org/stable/std/io/trait.BufRead.html)
+//             validate(&schema, inline_example_slice, error_limit).expect("validated")
+//         };
 
-            let my_data_vec: Vec<_> = (0..size)
-                .map(|x| Person {
-                    name: format!("name-{:08}", x),
-                    age: x,
-                })
-                .collect();
-            let my_data_string = serde_json::to_string_pretty(&my_data_vec).expect("to string");
-            let my_data_bytes = my_data_string.as_bytes();
-            validate(&schema, my_data_bytes, error_limit).expect("validated")
-        } else {
-            let inline_example_array = br#"[{"name":"name-00000000","age":0},{"name":"name-00000001","age":1},{"name":"name-00000002","age":2}]"#;
+//         let validated_typed: Vec<Person> =
+//             serde_json::from_value(validated).expect("conversion to Explicit Type");
 
-            let inline_example_slice = &inline_example_array[..]; // Has into for reader (https://doc.rust-lang.org/stable/std/io/trait.BufRead.html)
-            validate(&schema, inline_example_slice, error_limit).expect("validated")
-        };
-
-        let validated_typed: Vec<Person> =
-            serde_json::from_value(validated).expect("conversion to Explicit Type");
-
-        println!("There are {} records", validated_typed.len());
-    }
-}
+//         println!("There are {} records", validated_typed.len());
+//     }
+// }

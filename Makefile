@@ -9,6 +9,9 @@ endif
 
 DOCKER=docker
 
+FE_DIR=container-fe
+BE_DIR=container-be
+
 .PHONY: build crds
 
 all:
@@ -19,7 +22,17 @@ all:
 ghcr-login:
 	echo ${GHCR_TOKEN} | $(DOCKER) login ghcr.io -u $(GHCR_USER) --password-stdin
 
+	docker-be-run: docker-be
+		$(DOCKER) run --rm -it -p 8081:8081 $(IMAGE_NAME)-be
 
+	pg-schema-info:
+		@cd ${BE_DIR} && sqlx migrate info --database-url postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
+
+	pg-schema-run:
+		@cd ${BE_DIR} && sqlx migrate run --database-url postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
+
+	pg-schema-revert:
+		@cd ${BE_DIR} && sqlx migrate revert --database-url postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
 docker-fe:
 	{ \
 	$(DOCKER) build container-fe -t $(IMAGE_NAME)-fe -f container-fe/Dockerfile; \
@@ -44,39 +57,44 @@ cargo-doc:
 	@cargo doc --no-deps --document-private-items
 	@open target/doc/largejson/index.html
 
-PG_CONTAINER=test-postgres
-PG_ADMIN_PASSWORD ?= adminpw1
-PG_DATABASE=mydb
-PG_USERNAME=myuser
-PG_PASSWORD=userpw1
+pg-pool-restart:
+	kubectl -n dbs rollout restart deployment postgresql-postgresql-ha-pgpool
+	kubectl -n dbs get pods -w
+
+# port-forward the postgres service
+pg-port-forward:
+	kubectl -n dbs port-forward svc/postgresql-postgresql-ha-pgpool 5432:5432
 
 
-postgres-stop:
-	podman stop $(PG_CONTAINER)
-	podman container rm $(PG_CONTAINER)
+PG_SECRET=log4ham-pg
+PG_USER=$(shell kubectl -n log4ham get secret $(PG_SECRET) -o jsonpath="{.data.DB_USER}" | base64 --decode)
+PGPASSWORD=$(shell kubectl -n log4ham get secret $(PG_SECRET) -o jsonpath="{.data.DB_PASS}" | base64 --decode)
+PG_NAME=$(shell kubectl -n log4ham get secret $(PG_SECRET) -o jsonpath="{.data.DB_NAME}" | base64 --decode)
+DATABASE_URL=postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
 
+secret-update:
+	kubectl -n log4ham get secrets log4ham-pg -o jsonpath="{.data.DB_PASS}" | base64 -d > $(BE_DIR)/test-data/secrets/db/password
+	kubectl -n log4ham get secrets log4ham-pg -o jsonpath="{.data.DB_USER}" | base64 -d > $(BE_DIR)/test-data/secrets/db/username
 
-postgres-start:
-	podman run --name $(PG_CONTAINER) -p 5432:5432 -e POSTGRES_PASSWORD=$(PG_ADMIN_PASSWORD) -d postgres
+pg-login:
+	@PGPASSWORD=${PGPASSWORD} psql -h localhost -U ${PG_USER} -d ${PG_NAME}
 
+pg-connection:
+	@echo postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
 
-postgres-db: export PGPASSWORD=$(PG_ADMIN_PASSWORD)
-postgres-db:
-	psql -h localhost -U postgres postgres -c "create database $(PG_DATABASE);" || true
-	psql -h localhost -U postgres postgres -c "create user $(PG_USERNAME) with encrypted password '$(PG_PASSWORD)';grant all privileges on database $(PG_DATABASE) to $(PG_USERNAME);" || true
-	psql -h localhost -U postgres $(PG_DATABASE) -c "create SCHEMA $(PG_USERNAME) AUTHORIZATION $(PG_USERNAME);"
+pg-schema-info:
+	@cd container-be && sqlx migrate info --database-url postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
 
+pg-schema-run:
+	@cd container-be && sqlx migrate run --database-url postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
 
-postgres-schema:
-	sqlx migrate run --database-url postgres://$(PG_USERNAME):$(PG_PASSWORD)@localhost/$(PG_DATABASE)
+pg-schema-revert:
+	@cd container-be && sqlx migrate revert --database-url postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
 
-postgres-config: postgres-db postgres-schema
-
-
-watch: export DATABASE_URL=postgres://postgres:mypw@localhost/postgres
-watch:
-	cargo watch --ignore test_data -x "test ${TEST} -- --nocapture"
-
+pg-test-container:
+	@kubectl run -it --rm pg-test-pod --image=postgres:17.4 --env="POSTGRES_USER=${PG_USER}" --env="POSTGRES_PASSWORD=${PGPASSWORD}" --env="POSTGRES_DB=${PG_NAME}" --port=5432
+pg-test-forward:
+	kubectl port-forward pod/pg-test-pod 5432:5432
 
 bench: export DATABASE_URL=postgres://myuser:mypass@localhost/mydb
 bench:
@@ -84,7 +102,13 @@ bench:
 	open target/criterion/report/index.html
 
 watch-db-check:
-	cargo watch -x "run -- db-check --config test_data/myconfig.yaml"
+	cd ${BE_DIR} && cargo watch -x "run -- db-check --config test-data/config-localhost.yaml --secrets test-data/secrets"
+
+watch-config-check:
+	cd ${BE_DIR} && cargo watch -x "run -- config-check --config test-data/config-localhost.yaml --secrets test-data/secrets"
+
+watch-test:
+	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch --ignore test_data -x "test -- --nocapture"
 
 watch-run:
 	cargo watch -x "run -- receive --config test_data/myconfig.yaml"

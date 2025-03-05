@@ -3,14 +3,13 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use env_logger::Env;
 
+use log::info;
 use log4ham::{
-    app_schema::{
-        schema_person_string, schema_string, write_records, Person,
-    },
+    app_schema::{schema_person_string, schema_string, write_records, Person},
     error::MyError,
+    persistence::db_check,
     webserver::service_start,
 };
-use log::info;
 
 use log4ham::{webserver::MyConfig, NAME, VERSION};
 
@@ -103,21 +102,18 @@ fn main() -> Result<(), MyError> {
 
             info!("Loaded config {:#?}", config);
 
-
+            db_check(config.persistence)?;
 
             // println!("got an object store {:#?}", ben);
 
-
             // list_objects(ben.clone());
-
-
         }
         Commands::ConfigCheck { config, secrets } => {
             info!("Config check {NAME} for {VERSION}");
 
             let config: MyConfig = MyConfig::figment(config, secrets).extract()?;
 
-            info!("Loaded config {:?}", config);
+            info!("Loaded config {:#?}", config);
         }
     }
 
