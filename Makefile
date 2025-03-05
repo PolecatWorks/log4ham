@@ -111,7 +111,7 @@ watch-test:
 	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch --ignore test_data -x "test -- --nocapture"
 
 watch-run:
-	cargo watch -x "run -- receive --config test_data/myconfig.yaml"
+	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch -x "run -- start --config test-data/config-localhost.yaml --secrets test-data/secrets"
 
 
 # Run the container

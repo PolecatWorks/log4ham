@@ -9,9 +9,7 @@ hams:
     # - http://localhost:4201
     shutdowns: []
 webservice:
-  prefix:
-    name: view
-    version: v0
+  prefix: view
   address: 0.0.0.0:8080
   forwarding_headers: []
 persistence:

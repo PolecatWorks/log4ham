@@ -86,16 +86,11 @@ impl warp::Reply for ListIds {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct WebServicePrefixConfig {
-    pub name: String,
-    pub version: String,
-}
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebServiceConfig {
     /// Prefix of the served API
-    pub prefix: WebServicePrefixConfig,
+    pub prefix: String,
     /// Hostname to start the webservice on
     /// This allows chainging to localhost for dev and 0.0.0.0 or specific address for deployment
     pub address: SocketAddr,
@@ -113,8 +108,8 @@ pub struct MyConfig {
 impl MyConfig {
     // Note the `nested` option on both `file` providers. This makes each
     // top-level dictionary act as a profile.
-    pub fn figment<P: AsRef<Path> + Clone>(path: P, secrets: P) -> Figment {
-        Figment::new().merge(FileAdapter::wrap(Yaml::file(path)).relative_to_dir(secrets))
+    pub fn figment<P: AsRef<Path> + Clone>(yaml_string: &str, secrets: P) -> Figment {
+        Figment::new().merge(FileAdapter::wrap(Yaml::string(yaml_string)).relative_to_dir(secrets))
     }
 }
 
@@ -176,7 +171,7 @@ async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: Cancellation
         .recover(handle_rejection)
         .with(weblog);
 
-    let prefix_path = warp::path(prefix.name.clone());
+    let prefix_path = warp::path(prefix.clone());
 
     let router = prefix_path.and(combined);
 

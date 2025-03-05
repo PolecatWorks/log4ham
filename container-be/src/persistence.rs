@@ -33,10 +33,7 @@ pub struct PersistenceState {
 
 impl PersistenceState {
     pub async fn new(config: PersistenceConfig) -> Result<PersistenceState, MyError> {
-        info!(
-            "Creating PersistenceState with config: {:?}",
-            config.db.connection
-        );
+
         let pool_pg = PgPoolOptions::new()
             .max_connections(config.db.pool_size)
             .connect(config.db.connection().as_str())

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use env_logger::Env;
 
-use log::info;
+use log::{debug, error, info};
 use log4ham::{
     app_schema::{schema_person_string, schema_string, write_records, Person},
     error::MyError,
@@ -85,33 +85,39 @@ fn main() -> Result<(), MyError> {
         Commands::SchemaList => println!("{}", schema_string::<Vec<Person>>()?),
         Commands::Validate { filename } => todo!("Validate {filename}"),
         Commands::Start { config, secrets } => {
-            info!("Starting {NAME} for {VERSION}");
+            info!("Starting {NAME} at {VERSION}");
 
-            let config: MyConfig = MyConfig::figment(config, secrets)
+            let config_yaml = std::fs::read_to_string(config.clone())?;
+
+            let config: MyConfig = MyConfig::figment(&config_yaml, secrets)
                 .extract()
-                .expect("Config file loaded");
+                .unwrap_or_else(|err| {
+                    error!("Config file {config:?} failed with error \n{err:#?}");
+                    panic!("Config failed to load");
+            });
 
-            info!("Loaded config {:?}", config);
+            debug!("Loaded config {:?}", config);
 
             service_start(config)?
         }
         Commands::DbCheck { config, secrets } => {
             info!("Starting {NAME} for {VERSION}");
 
-            let config: MyConfig = MyConfig::figment(config, secrets).extract()?;
+            let config_yaml = std::fs::read_to_string(config.clone())?;
+
+            let config: MyConfig = MyConfig::figment(&config_yaml, secrets).extract()?;
 
             info!("Loaded config {:#?}", config);
 
             db_check(config.persistence)?;
 
-            // println!("got an object store {:#?}", ben);
-
-            // list_objects(ben.clone());
         }
         Commands::ConfigCheck { config, secrets } => {
             info!("Config check {NAME} for {VERSION}");
 
-            let config: MyConfig = MyConfig::figment(config, secrets).extract()?;
+            let config_yaml = std::fs::read_to_string(config.clone())?;
+
+            let config: MyConfig = MyConfig::figment(&config_yaml, secrets).extract()?;
 
             info!("Loaded config {:#?}", config);
         }
