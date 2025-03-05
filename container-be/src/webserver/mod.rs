@@ -177,7 +177,6 @@ async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: Cancellation
         .with(weblog);
 
     let prefix_path = warp::path(prefix.name.clone());
-    // .with(log);
 
     let router = prefix_path.and(combined);
 
