@@ -241,7 +241,7 @@ async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Inf
             MyError::ValidationError() => todo!(),
             MyError::FigmentError(err) => todo!(),
             MyError::SqlxError(err) => {
-                println!("error is {}", err);
+                // println!("error is {}", err);
                 match err {
                     sqlx::Error::RowNotFound => (
                         StatusCode::NOT_FOUND,
@@ -257,7 +257,7 @@ async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Inf
             MyError::ShutdownCheck => todo!(),
         }
     } else {
-        eprintln!("unhandled error: {:?}", err);
+        // eprintln!("unhandled error: {:?}", err);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             reply::json(&"Internal Server Error".to_string()),
