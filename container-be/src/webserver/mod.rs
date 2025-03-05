@@ -1,4 +1,3 @@
-pub mod lists;
 pub mod logs;
 pub mod users;
 
@@ -171,15 +170,13 @@ async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: Cancellation
 
     let weblog = warp::log(NAME);
 
-    let upload_limit = 200000;
-
-    let combined = warp::path("lists")
-        .and(lists::lists(pool_pg.clone(), upload_limit))
-        .or(warp::path("users").and(users::users(pool_pg.clone())))
+    let combined = warp::path("users")
+        .and(users::users(pool_pg.clone()))
+        .or(warp::path("logs").and(logs::logs(pool_pg.clone())))
         .recover(handle_rejection)
         .with(weblog);
 
-    let prefix_path = warp::path(prefix.name.clone()).and(warp::path(prefix.version.clone()));
+    let prefix_path = warp::path(prefix.name.clone());
     // .with(log);
 
     let router = prefix_path.and(combined);

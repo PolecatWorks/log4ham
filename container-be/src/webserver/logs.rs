@@ -89,7 +89,7 @@ pub fn logs_delete(
 
 pub fn logs(
     pool_pg: PgPool,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     logs_list(pool_pg.clone())
         .or(logs_create(pool_pg.clone()))
         .or(logs_read(pool_pg.clone()))
