@@ -107,6 +107,8 @@ pub mod handlers {
     use sqlx::PgPool;
 
     pub async fn list(options: ListOptions, pool_pg: PgPool) -> Result<ListIds, warp::Rejection> {
+        let options = ListOptions::defaulting(options);
+
         let ids = sqlx::query_as::<_, User>(
             r#"
             SELECT * FROM users

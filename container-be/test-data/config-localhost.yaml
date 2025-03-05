@@ -9,7 +9,7 @@ hams:
     # - http://localhost:4201
     shutdowns: []
 webservice:
-  prefix: view
+  prefix: log4ham
   address: 0.0.0.0:8080
   forwarding_headers: []
 persistence:

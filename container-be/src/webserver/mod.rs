@@ -52,7 +52,7 @@ impl Default for ListOptions {
     fn default() -> Self {
         Self {
             offset: Some(0),
-            limit: Some(30),
+            limit: Some(5),
         }
     }
 }

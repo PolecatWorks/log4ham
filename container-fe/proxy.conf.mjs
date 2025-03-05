@@ -32,8 +32,14 @@ console.log("Setting up bypass");
 var PREFIX = "/pie/v0/chunks";
 
 
-
 export default {
+  "/log4ham/**": {
+    target: "http://localhost:8080",
+    secure: false,
+    logLevel: "debug",
+    changeOrigin: true,
+  },
+
   "/home/**": {
     target: defaultTarget,
     secure: false,

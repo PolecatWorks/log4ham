@@ -1,0 +1,15 @@
+<p>users works!</p>
+
+<div class="mat-elevation-z8">
+
+    <p>User Ids: {{ userIds | json  }}</p>
+    <p>User Names: {{ userDetails | json  }}</p>
+    <p>Log Ids: {{ logIds | json  }}</p>
+
+</div>
+
+<p>
+    <button (click)="getUserIds()">Reload Users</button>
+    <button (click)="usersGetDetail()">Users Detail</button>
+    <button (click)="usersCreate('Ben', 'Greene', 'abc')">Add Ben</button>
+</p>
