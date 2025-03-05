@@ -2,7 +2,6 @@
 //!
 //! Allow derriving MyError from other Error types from dependant packages.
 
-
 /// Error type for handling errors on Sample
 #[derive(Debug)]
 pub enum MyError {
@@ -38,7 +37,6 @@ impl From<std::io::Error> for MyError {
         Self::Io("UNKNOWN")
     }
 }
-
 
 impl From<figment::error::Error> for MyError {
     fn from(value: figment::error::Error) -> Self {

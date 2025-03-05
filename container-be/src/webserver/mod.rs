@@ -1,4 +1,5 @@
 pub mod lists;
+pub mod logs;
 pub mod users;
 
 use figment::{
@@ -8,23 +9,30 @@ use figment::{
 use figment_file_provider_adapter::FileAdapter;
 use log::info;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use sqlx::{Pool, Postgres};
 use std::{
+    convert::Infallible,
     net::SocketAddr,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
 use tokio_util::sync::CancellationToken;
-use warp::Filter;
+use warp::{
+    reject::Rejection,
+    reply::{self, Reply},
+    Filter,
+};
 
 use crate::{
     error::MyError,
     hams::{start_hams_api, HamsConfig},
-    handle_rejection,
     persistence::{PersistenceConfig, PersistenceState},
     tokio_tools::run_in_tokio,
     NAME,
 };
+
+use warp::hyper::StatusCode;
 
 /// Postgres does not support unsigned int so we use i64 to represent the BIGSERIAL type which is a BIGINT in SQL
 type DbBigSerial = i64;
@@ -107,8 +115,7 @@ impl MyConfig {
     // Note the `nested` option on both `file` providers. This makes each
     // top-level dictionary act as a profile.
     pub fn figment<P: AsRef<Path> + Clone>(path: P, secrets: P) -> Figment {
-        Figment::new()
-            .merge(FileAdapter::wrap(Yaml::file(path)).relative_to_dir(secrets))
+        Figment::new().merge(FileAdapter::wrap(Yaml::file(path)).relative_to_dir(secrets))
     }
 }
 
@@ -157,11 +164,7 @@ pub async fn service_cancellable(ct: CancellationToken, config: MyConfig) -> Res
     Ok(())
 }
 
-async fn start_app_api(
-    state: MyState,
-    pool_pg: Pool<Postgres>,
-    ct: CancellationToken,
-) {
+async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: CancellationToken) {
     let prefix = state.config.webservice.prefix.clone();
 
     // Setup http server
@@ -170,7 +173,8 @@ async fn start_app_api(
 
     let upload_limit = 200000;
 
-    let combined = warp::path("lists").and(lists::lists(pool_pg.clone(), upload_limit))
+    let combined = warp::path("lists")
+        .and(lists::lists(pool_pg.clone(), upload_limit))
         .or(warp::path("users").and(users::users(pool_pg.clone())))
         .recover(handle_rejection)
         .with(weblog);
@@ -194,7 +198,6 @@ fn with_db_pool_pg(
     warp::any().map(move || state.clone())
 }
 
-
 fn with_state(
     state: MyState,
 ) -> impl Filter<Extract = (MyState,), Error = std::convert::Infallible> + Clone {
@@ -207,35 +210,80 @@ fn with_pathbuf(
     warp::any().map(move || pathbuf.clone())
 }
 
-
 pub fn service_start(config: MyConfig) -> Result<(), MyError> {
     let ct = CancellationToken::new();
 
     run_in_tokio(service_cancellable(ct, config))
 }
 
+async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Infallible> {
+    let (code, json_message) = if err.is_not_found() {
+        (StatusCode::NOT_FOUND, reply::json(&"Not Found".to_string()))
+    } else if err.find::<warp::reject::PayloadTooLarge>().is_some() {
+        (
+            StatusCode::BAD_REQUEST,
+            reply::json(&"Payload too large".to_string()),
+        )
+    } else if let Some(e) = err.find::<MyError>() {
+        match e {
+            MyError::Message(detail) => {
+                let error_message = json!({
+                    "errorType": "Message",
+                    "detail": detail,
+                });
+
+                (StatusCode::IM_A_TEAPOT, reply::json(&error_message))
+            }
+            MyError::Cancelled => todo!(),
+            MyError::Serde(_) => todo!(),
+            MyError::Io(_) => todo!(),
+            MyError::JsonValidation(errors) => {
+                let myval = serde_json::json!( { "status:": "validation failed","errors": errors});
+
+                (StatusCode::BAD_REQUEST, reply::json(&myval))
+            }
+            MyError::ValidationError() => todo!(),
+            MyError::FigmentError(err) => todo!(),
+            MyError::SqlxError(err) => {
+                println!("error is {}", err);
+                match err {
+                    sqlx::Error::RowNotFound => (
+                        StatusCode::NOT_FOUND,
+                        reply::json(&"Row not found".to_string()),
+                    ),
+                    _ => (
+                        StatusCode::IM_A_TEAPOT,
+                        reply::json(&"DB error".to_string()),
+                    ),
+                }
+            }
+            MyError::PreflightCheck => todo!(),
+            MyError::ShutdownCheck => todo!(),
+        }
+    } else {
+        eprintln!("unhandled error: {:?}", err);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            reply::json(&"Internal Server Error".to_string()),
+        )
+    };
+
+    Ok(warp::reply::with_status(json_message, code))
+}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use sqlx::{PgPool, Row};
-
 
     #[sqlx::test(migrations = false)]
     async fn db_connectivity(pool: PgPool) -> sqlx::Result<()> {
-
-        let foo = sqlx::query("SELECT 1")
-            .fetch_one(&pool)
-            .await?;
+        let foo = sqlx::query("SELECT 1").fetch_one(&pool).await?;
 
         assert_eq!(foo.get::<i32, _>(0), 1);
 
         Ok(())
     }
 }
-
-
 
 // #[cfg(test)]
 // mod test {

@@ -68,8 +68,6 @@ pub fn write_records(filename: &str, count: u32) -> Result<(), MyError> {
     Ok(())
 }
 
-
-
 // #[cfg(test)]
 // mod tests {
 

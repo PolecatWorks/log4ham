@@ -32,7 +32,6 @@ pub fn bench_list_handlers(c: &mut Criterion) {
                 password: None,
             },
         },
-
     };
 
     //     pool_size: 5,

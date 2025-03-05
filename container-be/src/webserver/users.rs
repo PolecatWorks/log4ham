@@ -4,11 +4,6 @@ use warp::Filter;
 
 use super::{with_db_pool_pg, DbBigSerial, ListOptions};
 
-
-
-
-
-
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow, PartialEq, Clone)]
 pub struct User {
     pub id: Option<DbBigSerial>,
@@ -31,9 +26,9 @@ impl User {
 impl User {
     /// Compare the content of the User object not the id
     pub fn content_eq(&self, other: &Self) -> bool {
-        self.forename == other.forename &&
-        self.surname == other.surname &&
-        self.password == other.password
+        self.forename == other.forename
+            && self.surname == other.surname
+            && self.password == other.password
     }
     /// Compare the id of the User object not the content
     pub fn id_eq(&self, other: &Self) -> bool {
@@ -49,7 +44,7 @@ impl warp::Reply for User {
 
 pub fn users_list(
     pool_pg: PgPool,
-) -> impl Filter<Extract = (impl warp::Reply, ), Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path::end()
         .and(warp::get())
         .and(warp::query::<ListOptions>())
@@ -59,7 +54,7 @@ pub fn users_list(
 
 pub fn users_create(
     pool_pg: PgPool,
-) -> impl Filter<Extract = (impl warp::Reply, ), Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path::end()
         // .and(warp::path::end())
         .and(warp::post())
@@ -68,9 +63,9 @@ pub fn users_create(
         .and_then(handlers::create)
 }
 
-pub fn users_read (
+pub fn users_read(
     pool_pg: PgPool,
-) -> impl Filter<Extract = (impl warp::Reply, ), Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path!(DbBigSerial)
         .and(warp::get())
         .and(with_db_pool_pg(pool_pg))
@@ -79,7 +74,7 @@ pub fn users_read (
 
 pub fn users_update(
     pool_pg: PgPool,
-) -> impl Filter<Extract = (impl warp::Reply, ), Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path!(DbBigSerial)
         .and(warp::put())
         .and(warp::body::json())
@@ -89,7 +84,7 @@ pub fn users_update(
 
 pub fn users_delete(
     pool_pg: PgPool,
-) -> impl Filter<Extract = (impl warp::Reply, ), Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path!(DbBigSerial)
         .and(warp::delete())
         .and(with_db_pool_pg(pool_pg))
@@ -98,7 +93,7 @@ pub fn users_delete(
 
 pub fn users(
     pool_pg: PgPool,
-) -> impl Filter<Extract = (impl warp::Reply, ), Error = warp::Rejection> + Clone {
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     users_list(pool_pg.clone())
         .or(users_create(pool_pg.clone()))
         .or(users_read(pool_pg.clone()))
@@ -106,27 +101,23 @@ pub fn users(
         .or(users_delete(pool_pg.clone()))
 }
 
-
-
 pub mod handlers {
     use super::*;
     use crate::{error::MyError, webserver::ListIds};
     use sqlx::PgPool;
 
-    pub async fn list(
-        options: ListOptions,
-        pool_pg: PgPool,
-    ) -> Result<ListIds, warp::Rejection> {
+    pub async fn list(options: ListOptions, pool_pg: PgPool) -> Result<ListIds, warp::Rejection> {
         let ids = sqlx::query_as::<_, User>(
             r#"
             SELECT * FROM users
             LIMIT $1 OFFSET $2
-            "#)
-            .bind(options.limit)
-            .bind(options.offset)
-            .fetch_all(&pool_pg)
-            .await
-            .map_err(MyError::from)?;
+            "#,
+        )
+        .bind(options.limit)
+        .bind(options.offset)
+        .fetch_all(&pool_pg)
+        .await
+        .map_err(MyError::from)?;
 
         let list_ids = ListIds {
             options,
@@ -136,47 +127,41 @@ pub mod handlers {
         Ok(list_ids)
     }
 
-
-    pub async fn create(
-        user: User,
-        pool_pg: PgPool,
-    ) -> Result<User, warp::Rejection> {
+    pub async fn create(user: User, pool_pg: PgPool) -> Result<User, warp::Rejection> {
         // let mut conn = pool_pg.acquire().await.map_err(MyError::from)?;
 
         if user.id.is_some() {
             return Err(warp::reject::custom(MyError::Message("ID must not be set")));
         }
 
-        let user = sqlx::query_as::<_, User> (
+        let user = sqlx::query_as::<_, User>(
             r#"
             INSERT INTO users (forename, surname, password)
             VALUES ($1, $2, $3)
             RETURNING *
-            "#)
-            .bind(&user.forename)
-            .bind(&user.surname)
-            .bind(&user.password)
-
-            .fetch_one(&pool_pg)
-            .await
-            .map_err(MyError::from)?;
+            "#,
+        )
+        .bind(&user.forename)
+        .bind(&user.surname)
+        .bind(&user.password)
+        .fetch_one(&pool_pg)
+        .await
+        .map_err(MyError::from)?;
 
         Ok(user)
     }
 
-    pub async fn read(
-        id: DbBigSerial,
-        pool_pg: PgPool,
-    ) -> Result<User, warp::Rejection> {
+    pub async fn read(id: DbBigSerial, pool_pg: PgPool) -> Result<User, warp::Rejection> {
         let user = sqlx::query_as::<_, User>(
             r#"
             SELECT * FROM users
             WHERE id = $1
-            "#)
-            .bind(id)
-            .fetch_one(&pool_pg)
-            .await
-            .map_err(MyError::from)?;
+            "#,
+        )
+        .bind(id)
+        .fetch_one(&pool_pg)
+        .await
+        .map_err(MyError::from)?;
 
         Ok(user)
     }
@@ -199,14 +184,15 @@ pub mod handlers {
             SET forename = $2, surname = $3, password = $4
             WHERE id = $1
             RETURNING *
-            "#)
-            .bind(id)
-            .bind(&user.forename)
-            .bind(&user.surname)
-            .bind(&user.password)
-            .fetch_one(&pool_pg)
-            .await
-            .map_err(MyError::from)?;
+            "#,
+        )
+        .bind(id)
+        .bind(&user.forename)
+        .bind(&user.surname)
+        .bind(&user.password)
+        .fetch_one(&pool_pg)
+        .await
+        .map_err(MyError::from)?;
 
         Ok(user)
     }
@@ -214,26 +200,22 @@ pub mod handlers {
     /// Delete a user
     ///
     /// This function will delete a user from the database
-    pub async fn delete(
-        id: DbBigSerial,
-        pool_pg: PgPool,
-    ) -> Result<User, warp::Rejection> {
+    pub async fn delete(id: DbBigSerial, pool_pg: PgPool) -> Result<User, warp::Rejection> {
         let user = sqlx::query_as::<_, User>(
             r#"
             DELETE FROM users
             WHERE id = $1
             RETURNING *
-            "#)
-            .bind(id)
-            .fetch_one(&pool_pg)
-            .await
-            .map_err(MyError::from)?;
+            "#,
+        )
+        .bind(id)
+        .fetch_one(&pool_pg)
+        .await
+        .map_err(MyError::from)?;
 
         Ok(user)
     }
-
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -241,10 +223,10 @@ mod tests {
 
     use super::*;
 
-    use warp::http::StatusCode;
     use sqlx::{PgPool, Row};
+    use warp::http::StatusCode;
 
-    const MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
+    // const MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!();
 
     #[tokio::test]
     async fn test_async_fn() {
@@ -282,7 +264,6 @@ mod tests {
         Ok(())
     }
 
-
     #[sqlx::test]
     async fn test_users_create(pool: PgPool) -> sqlx::Result<()> {
         let users_api = users(pool.clone());
@@ -310,12 +291,13 @@ mod tests {
             WHERE forename = $1
             AND surname = $2
             AND password = $3
-            "#)
-            .bind(&user.forename)
-            .bind(&user.surname)
-            .bind(&user.password)
-            .fetch_one(&pool)
-            .await?;
+            "#,
+        )
+        .bind(&user.forename)
+        .bind(&user.surname)
+        .bind(&user.password)
+        .fetch_one(&pool)
+        .await?;
 
         assert_eq!(user_db.forename, user.forename);
         assert_eq!(user_db.surname, user.surname);
@@ -477,8 +459,6 @@ mod tests {
         let list_ids: ListIds = serde_json::from_slice(resp_list.body()).unwrap();
         assert_eq!(list_ids.ids.len(), 0);
 
-
         Ok(())
     }
-
 }
