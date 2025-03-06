@@ -1,0 +1,35 @@
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { User } from './user';
+import { CollectionViewer, DataSource } from '@angular/cdk/collections';
+import { Log4HamService } from './log4ham.service';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class UsersDataSourceService extends DataSource<User> {
+  users = new BehaviorSubject<User[]>([]);
+  isLoading = new BehaviorSubject<boolean>(false);
+
+  constructor(private log4hamService: Log4HamService) {
+    super();
+  }
+
+  override connect(): Observable<User[]> {
+    return this.users.asObservable()
+  }
+
+  override disconnect(collectionViewer: CollectionViewer): void {
+    this.users.complete();
+  }
+
+  loadUsers() {
+    this.isLoading.next(true);
+    this.log4hamService.getUserDetails()
+      .subscribe(users => {
+        this.users.next(users);
+        this.isLoading.next(false);
+      });
+  }
+
+}

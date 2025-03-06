@@ -1,13 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { catchError, throwError } from 'rxjs';
+import { catchError, forkJoin, map, switchMap, throwError } from 'rxjs';
 import { ListIds } from './list-options';
 import { User } from './user';
 
 @Injectable({
   providedIn: 'root'
 })
-export class LogsystemService {
+export class Log4HamService {
 
   constructor(private http: HttpClient) { }
   private prefix = '/log4ham';
@@ -31,6 +31,17 @@ export class LogsystemService {
           return throwError(() => new Error('Could not process request: ' + error.message + ' (Status code: ' + error.status + ')'));
         })
       )
+  }
+
+  getUserDetails() {
+    return this.getUserIds()
+      .pipe(
+        switchMap((ids) => {
+          const detailRequests = ids.ids.map(id => this.usersGet(Number(id)));
+          return forkJoin(detailRequests);
+        }),
+        map(details => details.flat())
+    )
   }
 
   usersGet(id: Number) {

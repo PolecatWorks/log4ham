@@ -113,6 +113,9 @@ watch-test:
 watch-run:
 	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch -x "run -- start --config test-data/config-localhost.yaml --secrets test-data/secrets"
 
+watch-serve:
+	cd ${FE_DIR} && ng serve
+
 
 # Run the container
 docker-fe-dev:

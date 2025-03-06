@@ -1,18 +1,34 @@
-import { Component } from '@angular/core';
-import { LogsystemService } from '../../services/logsystem.service';
+import { Component, ViewChild } from '@angular/core';
+import { Log4HamService } from '../../services/log4ham.service';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs/internal/observable/forkJoin';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { switchMap, map } from 'rxjs/operators';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { User } from '../../services/user';
+
+const ELEMENT_DATA: User[] = [ { "id": 1, "forename": "Sharon", "surname": "Greene", "password": "abc" }, { "id": 2, "forename": "Ben", "surname": "Greene", "password": "abc" }, { "id": 3, "forename": "Sam", "surname": "Greene", "password": "abc" } ];
+
 
 @Component({
-  selector: 'app-users',
-  imports: [CommonModule],
+  imports: [CommonModule, MatTableModule, MatPaginatorModule],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss'
 })
 export class UsersComponent {
 
-  constructor(private logsystemApi: LogsystemService) { }
+  constructor(private logsystemApi: Log4HamService) { }
+
+  dataSource = new MatTableDataSource<User>(ELEMENT_DATA);
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+
+  ngAfterViewInit() {
+    this.dataSource.paginator = this.paginator;
+  }
+
+  displayedColumns: string[] = ['forename', 'surname'];
+
 
   userIds = {};
   logIds = {};
