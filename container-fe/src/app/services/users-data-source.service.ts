@@ -7,9 +7,12 @@ import { Log4HamService } from './log4ham.service';
 @Injectable({
   providedIn: 'root'
 })
-export class UsersDataSourceService extends DataSource<User> {
+export class UsersDataSource extends DataSource<User> {
   users = new BehaviorSubject<User[]>([]);
   isLoading = new BehaviorSubject<boolean>(false);
+
+
+
 
   constructor(private log4hamService: Log4HamService) {
     super();
@@ -25,7 +28,7 @@ export class UsersDataSourceService extends DataSource<User> {
 
   loadUsers() {
     this.isLoading.next(true);
-    this.log4hamService.getUserDetails()
+    this.log4hamService.usersGetDetail()
       .subscribe(users => {
         this.users.next(users);
         this.isLoading.next(false);

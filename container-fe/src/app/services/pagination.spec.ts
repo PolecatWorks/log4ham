@@ -1,4 +1,4 @@
-import { ListOptions } from './list-options';
+import { ListOptions } from './pagination';
 
 describe('ListOptions', () => {
   it('should create an instance', () => {

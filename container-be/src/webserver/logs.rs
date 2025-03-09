@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use warp::Filter;
 
-use super::{with_db_pool_pg, DbBigSerial, ListOptions};
+use super::{with_db_pool_pg, DbBigSerial, PageOptions};
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow, PartialEq, Clone)]
 pub struct Log {
@@ -41,7 +41,7 @@ pub fn logs_list(
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path::end()
         .and(warp::get())
-        .and(warp::query::<ListOptions>())
+        .and(warp::query::<PageOptions>())
         .and(with_db_pool_pg(pool_pg))
         .and_then(handlers::list)
 }
@@ -100,20 +100,20 @@ pub fn logs(
 pub mod handlers {
     use crate::{
         error::MyError,
-        webserver::{DbBigSerial, ListIds, ListOptions},
+        webserver::{DbBigSerial, ListPages, PageOptions},
     };
 
     use super::Log;
     use sqlx::PgPool;
 
-    pub async fn list(options: ListOptions, pool_pg: PgPool) -> Result<ListIds, warp::Rejection> {
+    pub async fn list(options: PageOptions, pool_pg: PgPool) -> Result<ListPages, warp::Rejection> {
         let ids = sqlx::query_as::<_, Log>("SELECT * FROM logs")
             .fetch_all(&pool_pg)
             .await
             .map_err(MyError::from)?;
 
-        let list_ids = ListIds {
-            options,
+        let list_ids = ListPages {
+            pagination: options,
             ids: ids.iter().map(|u| u.id.unwrap()).collect(),
         };
 
@@ -178,13 +178,13 @@ pub mod handlers {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::webserver::{handle_rejection, users, ListIds};
+    use crate::webserver::{handle_rejection, users, ListPages};
     use sqlx::PgPool;
     use warp::http::StatusCode;
 
     #[sqlx::test]
     async fn logs_handler_list_empty(pool: PgPool) -> sqlx::Result<()> {
-        let list_ids = handlers::list(ListOptions::default(), pool).await.unwrap();
+        let list_ids = handlers::list(PageOptions::default(), pool).await.unwrap();
 
         assert_eq!(list_ids.ids.len(), 0);
 
@@ -206,7 +206,7 @@ mod tests {
 
         assert!(log.content_eq(&new_log));
 
-        let list_ids = handlers::list(ListOptions::default(), pool.clone())
+        let list_ids = handlers::list(PageOptions::default(), pool.clone())
             .await
             .unwrap();
         assert_eq!(list_ids.ids.len(), 1);
@@ -269,7 +269,7 @@ mod tests {
 
         assert_eq!(resp.status(), StatusCode::OK);
 
-        let list_ids: ListIds = serde_json::from_slice(resp.body()).unwrap();
+        let list_ids: ListPages = serde_json::from_slice(resp.body()).unwrap();
 
         assert_eq!(list_ids.ids.len(), 0);
 
@@ -321,7 +321,7 @@ mod tests {
 
         assert_eq!(log_deleted0, log);
 
-        let list_ids = handlers::list(ListOptions::default(), pool.clone())
+        let list_ids = handlers::list(PageOptions::default(), pool.clone())
             .await
             .unwrap();
         assert_eq!(list_ids.ids.len(), 0);
@@ -351,7 +351,7 @@ mod tests {
             .await;
 
         assert_eq!(resp.status(), StatusCode::OK);
-        let list_ids: ListIds = serde_json::from_slice(resp.body()).unwrap();
+        let list_ids: ListPages = serde_json::from_slice(resp.body()).unwrap();
         assert_eq!(list_ids.ids.len(), 0);
 
         let resp = warp::test::request()
@@ -384,7 +384,7 @@ mod tests {
             .await;
 
         assert_eq!(resp.status(), StatusCode::OK);
-        let list_ids: ListIds = serde_json::from_slice(resp.body()).unwrap();
+        let list_ids: ListPages = serde_json::from_slice(resp.body()).unwrap();
         assert_eq!(list_ids.ids.len(), 1);
 
         // Read
@@ -444,7 +444,7 @@ mod tests {
             .await;
 
         assert_eq!(resp.status(), StatusCode::OK);
-        let list_ids: ListIds = serde_json::from_slice(resp.body()).unwrap();
+        let list_ids: ListPages = serde_json::from_slice(resp.body()).unwrap();
         assert_eq!(list_ids.ids.len(), 0);
 
         Ok(())

@@ -41,46 +41,66 @@ pub struct DbId {
     id: DbBigSerial,
 }
 
-// The query parameters for list_todos.
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ListOptions {
-    pub offset: Option<DbBigSerial>,
-    pub limit: Option<DbBigSerial>,
+#[derive(Serialize)]
+#[serde(rename_all = "lowercase")]
+enum SortOrder {
+    Asc,
+    Desc,
 }
 
-impl Default for ListOptions {
+pub struct PageSort {
+    property: String,
+    direction: SortOrder,
+}
+
+// The query parameters for list_todos.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PageOptions {
+    pub page: Option<DbBigSerial>,
+    pub size: Option<DbBigSerial>,
+    #[serde(flatten)]
+    pub sort: Option<DbBigSerial>,
+}
+
+impl Default for PageOptions {
     fn default() -> Self {
         Self {
-            offset: Some(0),
-            limit: Some(5),
+            size: Some(5),
+            page: Some(0),
+            sort: None,
         }
     }
 }
 
-impl ListOptions {
-    pub fn defaulting(inval: ListOptions) -> ListOptions {
-        ListOptions {
-            offset: if inval.offset.is_some() {
-                inval.offset
+impl PageOptions {
+    pub fn defaulting(inval: PageOptions) -> PageOptions {
+        PageOptions {
+            size: if inval.size.is_some() {
+                inval.size
             } else {
-                ListOptions::default().offset
+                PageOptions::default().size
             },
-            limit: if inval.limit.is_some() {
-                inval.limit
+            page: if inval.page.is_some() {
+                inval.page
             } else {
-                ListOptions::default().limit
+                PageOptions::default().page
+            },
+            sort: if inval.sort.is_some() {
+                inval.sort
+            } else {
+                PageOptions::default().sort
             },
         }
     }
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ListIds {
+pub struct ListPages {
     ids: Vec<DbBigSerial>,
-    options: ListOptions,
+    pagination: PageOptions,
 }
 
-impl warp::Reply for ListIds {
+impl warp::Reply for ListPages {
     fn into_response(self) -> warp::reply::Response {
         warp::reply::json(&self).into_response()
     }

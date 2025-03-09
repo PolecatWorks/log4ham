@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ViewChild } from '@angular/core';
 import { Log4HamService } from '../../services/log4ham.service';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs/internal/observable/forkJoin';
@@ -6,6 +6,9 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { switchMap, map } from 'rxjs/operators';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { User } from '../../services/user';
+import { UsersDataSource } from '../../services/users-data-source.service';
+import { PaginationDataSource } from '../../services/paginated-data-source.service';
+import { PageOptions, Sort } from '../../services/pagination';
 
 const ELEMENT_DATA: User[] = [ { "id": 1, "forename": "Sharon", "surname": "Greene", "password": "abc" }, { "id": 2, "forename": "Ben", "surname": "Greene", "password": "abc" }, { "id": 3, "forename": "Sam", "surname": "Greene", "password": "abc" } ];
 
@@ -15,19 +18,35 @@ const ELEMENT_DATA: User[] = [ { "id": 1, "forename": "Sharon", "surname": "Gree
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss'
 })
-export class UsersComponent {
+export class UsersComponent implements AfterViewInit {
+  displayedColumns: string[] = ['forename', 'surname'];
 
-  constructor(private logsystemApi: Log4HamService) { }
 
-  dataSource = new MatTableDataSource<User>(ELEMENT_DATA);
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-
-  ngAfterViewInit() {
-    this.dataSource.paginator = this.paginator;
+  constructor(
+    private log4HamService: Log4HamService,
+  ) {
+    // console.log("fetch for dataSource");
+    // this.data.fetch(1);
+  }
+  ngAfterViewInit(): void {
+    this.data.sortBy({property: 'surname', order: 'asc'});
+    this.data.fetch(1);
+    console.log("Have send sortBy and fetch");
+    // throw new Error('Method not implemented.');
   }
 
-  displayedColumns: string[] = ['forename', 'surname'];
+
+
+  data = new PaginationDataSource<User>(
+    ( request: PageOptions<User>) => this.log4HamService.usersGetDetailPaged(request),
+    {property: 'surname', order: 'asc'},
+    1
+  )
+
+
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
 
   userIds = {};
@@ -35,14 +54,9 @@ export class UsersComponent {
 
   userDetails = {};
 
-  ngOnInit(): void {
-    this.getUserIds();
-    this.getLogIds();
-    this.usersGetDetail();
-  }
 
   getUserIds() {
-    this.logsystemApi.getUserIds()
+    this.log4HamService.usersGetIds()
       .subscribe({
         next: (data) => {
           this.userIds = data;
@@ -55,16 +69,10 @@ export class UsersComponent {
   }
 
   usersGetDetail() {
-    this.logsystemApi.getUserIds()
-    .pipe(
-      switchMap((ids) => {
-        const detailRequests = ids.ids.map(id => this.logsystemApi.usersGet(Number(id)));
-        return forkJoin(detailRequests);
-      }),
-      map(details => details.flat())
-    )
+    this.log4HamService.usersGetDetail()
     .subscribe({
       next: (data) => {
+        console.log(data);
         this.userDetails = data;
       },
       error: (error) => {
@@ -75,7 +83,7 @@ export class UsersComponent {
   }
 
   getLogIds() {
-    this.logsystemApi.getLogIds()
+    this.log4HamService.getLogIds()
       .subscribe({
         next: (data) => {
           this.logIds = data;
@@ -88,10 +96,10 @@ export class UsersComponent {
   }
 
   usersCreate(forename: string, surname: string, password: string) {
-    this.logsystemApi.usersCreate(forename, surname, password)
+    this.log4HamService.usersCreate(forename, surname, password)
       .subscribe({
         next: (data) => {
-          console.log(data);
+          console.log("create: ",data);
           this.getUserIds();
         },
         error: (error) => {
@@ -100,6 +108,4 @@ export class UsersComponent {
         }
       });
   }
-
-
 }
