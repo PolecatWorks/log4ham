@@ -6,10 +6,16 @@ import { PaginationDataSource } from '../../services/paginated-data-source.servi
 import { PageOptions } from '../../services/pagination';
 import { Log4HamService } from '../../services/log4ham.service';
 import { Log } from '../../services/log';
+import { MatButtonModule } from '@angular/material/button';
+import { RouterLink, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-logs',
-  imports: [CommonModule, MatTableModule, MatPaginatorModule],
+  imports: [
+    CommonModule, MatTableModule, MatPaginatorModule,
+    MatButtonModule,
+    RouterOutlet, RouterLink,
+  ],
   templateUrl: './logs.component.html',
   styleUrl: './logs.component.scss'
 })

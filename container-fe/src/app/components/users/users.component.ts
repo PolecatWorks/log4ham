@@ -10,6 +10,7 @@ import { UsersDataSource } from '../../services/users-data-source.service';
 import { PaginationDataSource } from '../../services/paginated-data-source.service';
 import { PageOptions, Sort } from '../../services/pagination';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
 
 const ELEMENT_DATA: User[] = [ { "id": 1, "forename": "Sharon", "surname": "Greene", "password": "abc" }, { "id": 2, "forename": "Ben", "surname": "Greene", "password": "abc" }, { "id": 3, "forename": "Sam", "surname": "Greene", "password": "abc" } ];
 
@@ -17,7 +18,7 @@ const ELEMENT_DATA: User[] = [ { "id": 1, "forename": "Sharon", "surname": "Gree
 @Component({
   imports: [
     CommonModule, MatTableModule, MatPaginatorModule,
-    RouterOutlet, RouterLink,
+    RouterOutlet, RouterLink, MatButtonModule,
 
   ],
   templateUrl: './users.component.html',

@@ -5,9 +5,9 @@
 
     <div>
         <p>
-            <button (click)="this.data.fetch(1)">Reload Users</button>
+            <button mat-flat-button (click)="this.data.fetch(1)">Reload Users</button>
             <!-- <button (click)="usersGetDetail()">Users Detail</button> -->
-            <button (click)="usersCreate({'forename': 'Ben', 'surname': 'Greene', 'password': 'abc'})">Add Ben</button>
+            <button mat-flat-button (click)="usersCreate({'forename': 'Ben', 'surname': 'Greene', 'password': 'abc'})">New User</button>
         </p>
     </div>
 
@@ -49,5 +49,4 @@
     </div>
 
     <router-outlet />
-
 </div>
