@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ViewChild } from '@angular/core';
+import { Component, ViewChild, AfterViewInit } from '@angular/core';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { PaginationDataSource } from '../../services/paginated-data-source.service';
@@ -15,7 +15,7 @@ import { RouterLink, RouterOutlet } from '@angular/router';
   templateUrl: './logs.component.html',
   styleUrl: './logs.component.scss',
 })
-export class LogsComponent {
+export class LogsComponent implements AfterViewInit {
   displayedColumns: string[] = ['user', 'description'];
 
   constructor(private log4HamService: Log4HamService) {

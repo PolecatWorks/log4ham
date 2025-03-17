@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ChunksService } from '../../services/chunks.service';
 import { IChunk } from './ichunk';
@@ -9,14 +9,14 @@ import { IChunk } from './ichunk';
   templateUrl: './chunks.component.html',
   styleUrl: './chunks.component.scss',
 })
-export class ChunksComponent {
+export class ChunksComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private chunksApi: ChunksService
   ) {}
 
-  chunks: number = 0;
-  chunkName: string = '';
+  chunks = 0;
+  chunkName = '';
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
@@ -25,7 +25,7 @@ export class ChunksComponent {
     });
   }
 
-  getChunks(id: String) {
+  getChunks(id: string) {
     this.chunksApi.getChunks(id).subscribe({
       next: (data: IChunk) => {
         this.chunks = data.chunks;

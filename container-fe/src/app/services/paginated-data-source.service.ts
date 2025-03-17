@@ -1,6 +1,5 @@
-import { DataSource } from '@angular/cdk/collections';
 import { Inject, Injectable } from '@angular/core';
-import { BehaviorSubject, combineLatest, forkJoin, map, Observable, pluck, share, startWith, Subject, switchMap } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Observable, Subject, switchMap } from 'rxjs';
 import { ListPages, PaginatedEndpoint, SimpleDataSource, Sort } from './pagination';
 
 @Injectable({

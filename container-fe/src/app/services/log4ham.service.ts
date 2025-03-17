@@ -32,16 +32,16 @@ export class Log4HamService {
     const params = new HttpParams({ fromObject: query as any });
 
     return this.http.get<ListPages<number, Log>>(this.prefix + '/logs', { params: params }).pipe(
-      catchError((error: any) => {
+      catchError(error => {
         console.error('Error:', error);
         return throwError(() => new Error('Could not process request: ' + error.message + ' (Status code: ' + error.status + ')'));
       })
     );
   }
 
-  logsGet(id: Number) {
+  logsGet(id: number) {
     return this.http.get<Log>(this.prefix + '/logs/' + id).pipe(
-      catchError((error: any) => {
+      catchError(error => {
         console.error('Error:', error);
         return throwError(() => new Error('Could not process request: ' + error.message + ' (Status code: ' + error.status + ')'));
       })
@@ -50,7 +50,7 @@ export class Log4HamService {
 
   logsCreate(log: Log) {
     return this.http.post(this.prefix + '/logs', log).pipe(
-      catchError((error: any) => {
+      catchError(error => {
         console.error('Error:', error);
         return throwError(() => new Error('Could not create new log: ' + error.message + ' (Status code: ' + error.status + ')'));
       })
@@ -60,7 +60,7 @@ export class Log4HamService {
   // Define users APIs
   usersCreate(user: User) {
     return this.http.post(this.prefix + '/users', user).pipe(
-      catchError((error: any) => {
+      catchError(error => {
         console.error('Error:', error);
         return throwError(() => new Error('Could not create new user: ' + error.message + ' (Status code: ' + error.status + ')'));
       })
@@ -85,16 +85,16 @@ export class Log4HamService {
     const params = new HttpParams({ fromObject: query as any });
 
     return this.http.get<ListPages<number, User>>(this.prefix + '/users', { params: params }).pipe(
-      catchError((error: any) => {
+      catchError(error => {
         console.error('Error:', error);
         return throwError(() => new Error('Could not process request: ' + error.message + ' (Status code: ' + error.status + ')'));
       })
     );
   }
 
-  usersGet(id: Number) {
+  usersGet(id: number) {
     return this.http.get<User>(this.prefix + '/users/' + id).pipe(
-      catchError((error: any) => {
+      catchError(error => {
         console.error('Error:', error);
         return throwError(() => new Error('Could not process request: ' + error.message + ' (Status code: ' + error.status + ')'));
       })

@@ -1,5 +1,5 @@
 export interface Log {
-  id?: Number;
-  user: Number;
+  id?: number;
+  user: number;
   description: string;
 }
