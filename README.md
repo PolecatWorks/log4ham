@@ -34,4 +34,4 @@ Pull your DB to local to test
 # ToDo
 
 * [ ] Swap nginx image to alpine version to reduce size
-* [ ]
+* [ ] Reload users when we navigate back from updating or creating a new user
