@@ -6,8 +6,8 @@ import { jwtDecode } from 'jwt-decode';
 @Component({
   selector: 'login-user',
   imports: [CommonModule],
-  templateUrl: './user.component.html',
-  styleUrl: './user.component.scss'
+  templateUrl: './login-user.component.html',
+  styleUrl: './login-user.component.scss'
 })
 export class LoginUserComponent {
   constructor(private oauthService: OAuthService) {}
