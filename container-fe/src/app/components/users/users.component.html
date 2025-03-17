@@ -1,23 +1,17 @@
 <!-- <div class="content-wrapper"> -->
-<div>
-
-<p>users works!</p>
-
-<div class="mat-elevation-z8">
-
-    <p>User Ids: {{ userIds | json  }}</p>
-    <p>Log Ids: {{ logIds | json  }}</p>
-
-</div>
-
-<p>
-    <button (click)="getUserIds()">Reload Users</button>
-    <button (click)="usersGetDetail()">Users Detail</button>
-    <button (click)="usersCreate('Ben', 'Greene', 'abc')">Add Ben</button>
-</p>
-</div>
 
 <div class="content-wrapper">
+    <h1>Users</h1>
+
+    <div>
+        <p>
+            <button (click)="this.data.fetch(1)">Reload Users</button>
+            <!-- <button (click)="usersGetDetail()">Users Detail</button> -->
+            <button (click)="usersCreate({'forename': 'Ben', 'surname': 'Greene', 'password': 'abc'})">Add Ben</button>
+        </p>
+    </div>
+
+
     <div class="mat-elevation-z8">
         <table mat-table [dataSource]="data" class="mat-elevation-z8">
 
@@ -38,13 +32,22 @@
 
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            <!-- (click)="clickRow(row)" -->
+            <tr mat-row
+
+                [routerLink]="[row.id]"
+                *matRowDef="let row; columns: displayedColumns;">
+            </tr>
+
         </table>
         <mat-paginator
             [pageSizeOptions]="[5, 10, 20]"
             showFirstLastButtons
-            aria-label="Select page of periodic elements">
+            aria-label="Select page of users">
             <!-- [pageIndex] = "page.pagination.page" -->
         </mat-paginator>
     </div>
+
+    <router-outlet />
+
 </div>

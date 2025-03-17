@@ -1,21 +1,14 @@
-<p>user works!</p>
 
-<h2>User</h2>
-<p>{{ userName }}</p>
-
-<h2>Id-Token</h2>
-<p>{{ idToken }}</p>
-
-<h2>Access Token</h2>
-<p>{{ accessToken }}</p>
-
-<h2>Resource</h2>
-<p>{{ resource_access | json  }}</p>
-
-<p>
-  <button (click)="refresh()">Refresh</button>
-</p>
-
-<p>
-  <button (click)="logout()">Logout</button>
-</p>
+<div>
+  <form (submit)="submit()">
+    <mat-form-field>
+      <mat-label>First name</mat-label>
+      <input matInput required [(ngModel)]="user.forename" name="forename">
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Last name</mat-label>
+      <input matInput required [(ngModel)]="user.surname" name="surname">
+    </mat-form-field>
+    <button mat-raised-button>Submit</button>
+  </form>
+</div>

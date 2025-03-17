@@ -26,13 +26,13 @@ export class UsersDataSource extends DataSource<User> {
     this.users.complete();
   }
 
-  loadUsers() {
-    this.isLoading.next(true);
-    this.log4hamService.usersGetDetail()
-      .subscribe(users => {
-        this.users.next(users);
-        this.isLoading.next(false);
-      });
-  }
+  // loadUsers() {
+  //   this.isLoading.next(true);
+  //   this.log4hamService.usersGetDetail()
+  //     .subscribe(users => {
+  //       this.users.next(users);
+  //       this.isLoading.next(false);
+  //     });
+  // }
 
 }

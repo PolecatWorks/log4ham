@@ -9,14 +9,19 @@ import { User } from '../../services/user';
 import { UsersDataSource } from '../../services/users-data-source.service';
 import { PaginationDataSource } from '../../services/paginated-data-source.service';
 import { PageOptions, Sort } from '../../services/pagination';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 
 const ELEMENT_DATA: User[] = [ { "id": 1, "forename": "Sharon", "surname": "Greene", "password": "abc" }, { "id": 2, "forename": "Ben", "surname": "Greene", "password": "abc" }, { "id": 3, "forename": "Sam", "surname": "Greene", "password": "abc" } ];
 
 
 @Component({
-  imports: [CommonModule, MatTableModule, MatPaginatorModule],
+  imports: [
+    CommonModule, MatTableModule, MatPaginatorModule,
+    RouterOutlet, RouterLink,
+
+  ],
   templateUrl: './users.component.html',
-  styleUrl: './users.component.scss'
+  styleUrl: './users.component.scss',
 })
 export class UsersComponent implements AfterViewInit {
   displayedColumns: string[] = ['forename', 'surname'];
@@ -39,72 +44,68 @@ export class UsersComponent implements AfterViewInit {
 
 
   data = new PaginationDataSource<User>(
-    ( request: PageOptions<User>) => this.log4HamService.usersGetDetailPaged(request),
+    ( request: PageOptions<User>) => this.log4HamService.usersGetPagedDetail(request),
     {property: 'surname', order: 'asc'},
     1
   )
 
-
-
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-
-  userIds = {};
-  logIds = {};
-
-  userDetails = {};
-
-
-  getUserIds() {
-    this.log4HamService.usersGetIds()
-      .subscribe({
-        next: (data) => {
-          this.userIds = data;
-        },
-        error: (error) => {
-          console.error('Error:', error);
-          this.userIds = -1;
-        }
-      });
+  clickRow(_t39: any) {
+    throw new Error('Method not implemented.');
   }
 
-  usersGetDetail() {
-    this.log4HamService.usersGetDetail()
-    .subscribe({
-      next: (data) => {
-        console.log(data);
-        this.userDetails = data;
-      },
-      error: (error) => {
-        console.error('Error:', error);
-        this.userDetails = [];
-      }
-    });
-  }
 
-  getLogIds() {
-    this.log4HamService.getLogIds()
-      .subscribe({
-        next: (data) => {
-          this.logIds = data;
-        },
-        error: (error) => {
-          console.error('Error:', error);
-          this.logIds = -1;
-        }
-      });
-  }
+  // getUserIds() {
+  //   this.log4HamService.usersGetIds()
+  //     .subscribe({
+  //       next: (data) => {
+  //         this.userIds = data;
+  //       },
+  //       error: (error) => {
+  //         console.error('Error:', error);
+  //         this.userIds = -1;
+  //       }
+  //     });
+  // }
 
-  usersCreate(forename: string, surname: string, password: string) {
-    this.log4HamService.usersCreate(forename, surname, password)
+  // usersGetDetail() {
+  //   this.log4HamService.usersGetDetail()
+  //   .subscribe({
+  //     next: (data) => {
+  //       console.log(data);
+  //       this.userDetails = data;
+  //     },
+  //     error: (error) => {
+  //       console.error('Error:', error);
+  //       this.userDetails = [];
+  //     }
+  //   });
+  // }
+
+  // getLogIds() {
+  //   this.log4HamService.getLogIds()
+  //     .subscribe({
+  //       next: (data) => {
+  //         this.logIds = data;
+  //       },
+  //       error: (error) => {
+  //         console.error('Error:', error);
+  //         this.logIds = -1;
+  //       }
+  //     });
+  // }
+
+  usersCreate(user: User) {
+    this.log4HamService.usersCreate(user)
       .subscribe({
         next: (data) => {
           console.log("create: ",data);
-          this.getUserIds();
+          this.data.fetch(0);
         },
         error: (error) => {
           console.error('Error:', error);
-          this.userIds = -1;
+          // this.userIds = -1;
         }
       });
   }
