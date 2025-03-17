@@ -91,7 +91,7 @@ export class PaginationDataSource<T> implements SimpleDataSource<T> {
 
   fetch(page: number): void {
     this.pageNumber.next(page);
-    console.log("Made a fetch of ", page);
+    console.log('Made a fetch of ', page);
   }
 
 
@@ -100,8 +100,8 @@ export class PaginationDataSource<T> implements SimpleDataSource<T> {
 
     return this.page.pipe(
       map(page => {
-        let retval = page.ids
-        console.log("page", retval);
+        const retval = page.ids;
+        console.log('page', retval);
         return retval;
       })
     );
