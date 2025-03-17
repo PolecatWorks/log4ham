@@ -59,6 +59,7 @@ pub fn users_create(
         // .and(warp::path::end())
         .and(warp::post())
         .and(warp::body::json())
+        .and(warp::body::content_length_limit(1024 * 32))
         .and(with_db_pool_pg(pool_pg))
         .and_then(handlers::create)
 }
@@ -78,6 +79,7 @@ pub fn users_update(
     warp::path!(DbBigSerial)
         .and(warp::put())
         .and(warp::body::json())
+        .and(warp::body::content_length_limit(1024 * 32))
         .and(with_db_pool_pg(pool_pg))
         .and_then(handlers::update)
 }

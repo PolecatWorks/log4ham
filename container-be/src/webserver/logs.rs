@@ -7,15 +7,15 @@ use super::{with_db_pool_pg, DbBigSerial, PageOptions};
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow, PartialEq, Clone)]
 pub struct Log {
     pub id: Option<DbBigSerial>,
-    pub user_id: DbBigSerial,
+    pub user: DbBigSerial,
     pub description: String,
 }
 
 impl Log {
-    pub fn new<S: Into<String>>(user_id: DbBigSerial, description: S) -> Self {
+    pub fn new<S: Into<String>>(user: DbBigSerial, description: S) -> Self {
         Self {
             id: None,
-            user_id,
+            user,
             description: description.into(),
         }
     }
@@ -23,7 +23,7 @@ impl Log {
 
 impl Log {
     pub fn content_eq(&self, other: &Self) -> bool {
-        self.user_id == other.user_id && self.description == other.description
+        self.user == other.user && self.description == other.description
     }
     pub fn id_eq(&self, other: &Self) -> bool {
         self.id == other.id
@@ -52,6 +52,7 @@ pub fn logs_create(
     warp::path::end()
         .and(warp::post())
         .and(warp::body::json())
+        .and(warp::body::content_length_limit(1024 * 32))
         .and(with_db_pool_pg(pool_pg))
         .and_then(handlers::create)
 }
@@ -73,6 +74,7 @@ pub fn logs_update(
         .and(warp::path::end())
         .and(warp::put())
         .and(warp::body::json())
+        .and(warp::body::content_length_limit(1024 * 32))
         .and(with_db_pool_pg(pool_pg))
         .and_then(handlers::update)
 }
@@ -121,9 +123,9 @@ pub mod handlers {
     }
     pub async fn create(new_log: Log, pool_pg: PgPool) -> Result<Log, warp::Rejection> {
         let log = sqlx::query_as::<_, Log>(
-            "INSERT INTO logs (user_id, description) VALUES ($1, $2) RETURNING *",
+            "INSERT INTO logs (\"user\", description) VALUES ($1, $2) RETURNING *",
         )
-        .bind(new_log.user_id)
+        .bind(new_log.user)
         .bind(new_log.description)
         .fetch_one(&pool_pg)
         .await
@@ -152,10 +154,10 @@ pub mod handlers {
         }
 
         let log = sqlx::query_as::<_, Log>(
-            "UPDATE logs SET user_id = $2, description = $3 WHERE id = $1 RETURNING *",
+            "UPDATE logs SET \"user\" = $2, description = $3 WHERE id = $1 RETURNING *",
         )
         .bind(id)
-        .bind(log.user_id)
+        .bind(log.user)
         .bind(log.description)
         .fetch_one(&pool_pg)
         .await
@@ -290,7 +292,7 @@ mod tests {
 
         let log_update = Log {
             id: log.id,
-            user_id: user.id.unwrap(),
+            user: user.id.unwrap(),
             description: "updated log".to_string(),
         };
 
@@ -401,7 +403,7 @@ mod tests {
         // Update
         let log_update = Log {
             id: log.id,
-            user_id: log.user_id,
+            user: log.user,
             description: "updated log".to_string(),
         };
         let resp = warp::test::request()
