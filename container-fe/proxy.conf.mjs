@@ -4,57 +4,56 @@ const testdatadir = './testdata';
 
 // const fs = require('fs')
 
-var defaultTarget = "http://dev.k8s/";
+var defaultTarget = 'http://dev.k8s/';
 
 const sampleChunk = {
-  "name": "chunks1",
-  "size": 100,
-}
+  name: 'chunks1',
+  size: 100,
+};
 
 const sampleBuckets = [
   {
-    "location": "abcdef.json",
-    last_modified: "2019-01-01T00:00:00Z",
+    location: 'abcdef.json',
+    last_modified: '2019-01-01T00:00:00Z',
     size: 100,
-    e_tag: "1234567890abcdef",
+    e_tag: '1234567890abcdef',
     version: null,
   },
   {
-    "location": "ffff",
-    last_modified: "2019-01-01T00:00:00Z",
+    location: 'ffff',
+    last_modified: '2019-01-01T00:00:00Z',
     size: 100000,
-    e_tag: "1234567890cdef",
+    e_tag: '1234567890cdef',
     version: null,
-  }
-]
+  },
+];
 
-console.log("Setting up bypass");
-var PREFIX = "/pie/v0/chunks";
-
+console.log('Setting up bypass');
+var PREFIX = '/pie/v0/chunks';
 
 export default {
-  "/log4ham/**": {
-    target: "http://localhost:8080",
+  '/log4ham/**': {
+    target: 'http://localhost:8080',
     secure: false,
-    logLevel: "debug",
+    logLevel: 'debug',
     changeOrigin: true,
   },
 
-  "/home/**": {
+  '/home/**': {
     target: defaultTarget,
     secure: false,
-    logLevel: "debug",
+    logLevel: 'debug',
     bypass: function (req, res, proxyOptions) {
       let url = req.url;
-      console.log("Bypassing for", url);
-      return "/index.html";
+      console.log('Bypassing for', url);
+      return '/index.html';
     },
   },
 
-  "/auth": {
-    target: "http://dev.k8s/",
+  '/auth': {
+    target: 'http://dev.k8s/',
     secure: false,
-    logLevel: "debug",
+    logLevel: 'debug',
     changeOrigin: true,
   },
 
@@ -65,35 +64,33 @@ export default {
   //   changeOrigin: true,
   // },
 
-  "/pie/v0/chunks": {
+  '/pie/v0/chunks': {
     target: defaultTarget,
     secure: false,
-    logLevel: "debug",
+    logLevel: 'debug',
     changeOrigin: true,
 
     configure: (proxy, _options) => {
       proxy.on('error', (err, req, res) => {
-
         let url = req.url;
 
         if (url.startsWith(PREFIX)) {
-          console.log("Proxy failed for ",url, " so substituting with test data")
+          console.log('Proxy failed for ', url, ' so substituting with test data');
           // PREFIX is exactly at the beginning
           url = url.slice(PREFIX.length);
-          if (url === "") {
+          if (url === '') {
             res.end(JSON.stringify(sampleChunk));
           } else {
             try {
-              const fileContents = fs.readFileSync(testdatadir+url, { encoding: 'utf8'});
+              const fileContents = fs.readFileSync(testdatadir + url, { encoding: 'utf8' });
               res.end(fileContents);
             } catch (err) {
-            res.writeHead(404, {
-              'Content-Type': 'text/plain',
-            });
+              res.writeHead(404, {
+                'Content-Type': 'text/plain',
+              });
 
-            res.end(JSON.stringify({'error': 'File not found', 'file': testdatadir+url}));
+              res.end(JSON.stringify({ error: 'File not found', file: testdatadir + url }));
             }
-
           }
 
           return;
@@ -111,7 +108,6 @@ export default {
         console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
       });
     },
-
   },
   // {
   //   context: [

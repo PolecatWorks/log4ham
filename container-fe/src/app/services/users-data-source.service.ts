@@ -22,5 +22,4 @@ export class UsersDataSource extends DataSource<User> {
   override disconnect(collectionViewer: CollectionViewer): void {
     this.users.complete();
   }
-
 }

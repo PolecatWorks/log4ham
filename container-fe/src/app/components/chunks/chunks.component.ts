@@ -7,14 +7,16 @@ import { IChunk } from './ichunk';
   selector: 'app-chunks',
   imports: [],
   templateUrl: './chunks.component.html',
-  styleUrl: './chunks.component.scss'
+  styleUrl: './chunks.component.scss',
 })
 export class ChunksComponent {
-
-  constructor(private route: ActivatedRoute, private chunksApi: ChunksService) { }
+  constructor(
+    private route: ActivatedRoute,
+    private chunksApi: ChunksService
+  ) {}
 
   chunks: number = 0;
-  chunkName: string = "";
+  chunkName: string = '';
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
@@ -24,31 +26,29 @@ export class ChunksComponent {
   }
 
   getChunks(id: String) {
-    this.chunksApi.getChunks(id)
-      .subscribe({
-        next: (data: IChunk) => {
-          this.chunks = data.chunks;
-        },
-        error: (error) => {
-          console.error('Error:', error);
-          this.chunks = -1;
-          this.chunkName = id + ": Error ("+ error.message +")";
-        }
-      });
+    this.chunksApi.getChunks(id).subscribe({
+      next: (data: IChunk) => {
+        this.chunks = data.chunks;
+      },
+      error: error => {
+        console.error('Error:', error);
+        this.chunks = -1;
+        this.chunkName = id + ': Error (' + error.message + ')';
+      },
+    });
   }
 
   sendChunks() {
-    this.chunksApi.sendChunks(this.chunkName,"ABC" , 20)
-      .subscribe({
-        next: (data) => {
-          console.log(data);
-        },
-        error: (error) => {
-          console.error('Error:', error);
-          this.chunks = -1;
-          this.chunkName = this.chunkName + ": Error ("+ error.message +")";
-        }
-      });
+    this.chunksApi.sendChunks(this.chunkName, 'ABC', 20).subscribe({
+      next: data => {
+        console.log(data);
+      },
+      error: error => {
+        console.error('Error:', error);
+        this.chunks = -1;
+        this.chunkName = this.chunkName + ': Error (' + error.message + ')';
+      },
+    });
     this.getChunks(this.chunkName);
   }
 }

@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import {  provideHttpClient, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
 
 import { provideOAuthClient } from 'angular-oauth2-oidc';
 import { authInterceptor } from './interceptors/auth.interceptor';
@@ -13,11 +13,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideAnimationsAsync(),
-    provideHttpClient(
-      withInterceptorsFromDi(),
-      withInterceptors([authInterceptor])
-    ),
+    provideHttpClient(withInterceptorsFromDi(), withInterceptors([authInterceptor])),
     provideOAuthClient(),
-
-  ]
+  ],
 };

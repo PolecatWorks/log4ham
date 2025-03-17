@@ -12,50 +12,42 @@ import { PageOptions, Sort } from '../../services/pagination';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 
-const ELEMENT_DATA: User[] = [ { "id": 1, "forename": "Sharon", "surname": "Greene", "password": "abc" }, { "id": 2, "forename": "Ben", "surname": "Greene", "password": "abc" }, { "id": 3, "forename": "Sam", "surname": "Greene", "password": "abc" } ];
-
+const ELEMENT_DATA: User[] = [
+  { id: 1, forename: 'Sharon', surname: 'Greene', password: 'abc' },
+  { id: 2, forename: 'Ben', surname: 'Greene', password: 'abc' },
+  { id: 3, forename: 'Sam', surname: 'Greene', password: 'abc' },
+];
 
 @Component({
-  imports: [
-    CommonModule, MatTableModule, MatPaginatorModule,
-    RouterOutlet, RouterLink, MatButtonModule,
-
-  ],
+  imports: [CommonModule, MatTableModule, MatPaginatorModule, RouterOutlet, RouterLink, MatButtonModule],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss',
 })
 export class UsersComponent implements AfterViewInit {
   displayedColumns: string[] = ['forename', 'surname'];
 
-
-
-  constructor(
-    private log4HamService: Log4HamService,
-  ) {
+  constructor(private log4HamService: Log4HamService) {
     // console.log("fetch for dataSource");
     // this.data.fetch(1);
   }
   ngAfterViewInit(): void {
-    this.data.sortBy({property: 'surname', order: 'asc'});
+    this.data.sortBy({ property: 'surname', order: 'asc' });
     this.data.fetch(1);
-    console.log("Have send sortBy and fetch");
+    console.log('Have send sortBy and fetch');
     // throw new Error('Method not implemented.');
   }
 
-
-
   data = new PaginationDataSource<User>(
-    ( request: PageOptions<User>) => this.log4HamService.usersGetPagedDetail(request),
-    {property: 'surname', order: 'asc'},
+    (request: PageOptions<User>) => this.log4HamService.usersGetPagedDetail(request),
+    { property: 'surname', order: 'asc' },
     1
-  )
+  );
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   clickRow(_t39: any) {
     throw new Error('Method not implemented.');
   }
-
 
   // getUserIds() {
   //   this.log4HamService.usersGetIds()
@@ -98,16 +90,15 @@ export class UsersComponent implements AfterViewInit {
   // }
 
   usersCreate(user: User) {
-    this.log4HamService.usersCreate(user)
-      .subscribe({
-        next: (data) => {
-          console.log("create: ",data);
-          this.data.fetch(0);
-        },
-        error: (error) => {
-          console.error('Error:', error);
-          // this.userIds = -1;
-        }
-      });
+    this.log4HamService.usersCreate(user).subscribe({
+      next: data => {
+        console.log('create: ', data);
+        this.data.fetch(0);
+      },
+      error: error => {
+        console.error('Error:', error);
+        // this.userIds = -1;
+      },
+    });
   }
 }

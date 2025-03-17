@@ -7,14 +7,14 @@ import { jwtDecode } from 'jwt-decode';
   selector: 'login-user',
   imports: [CommonModule],
   templateUrl: './login-user.component.html',
-  styleUrl: './login-user.component.scss'
+  styleUrl: './login-user.component.scss',
 })
 export class LoginUserComponent {
   constructor(private oauthService: OAuthService) {}
 
   get userName(): string {
     const claims = this.oauthService.getIdentityClaims();
-    if (!claims) return "null";
+    if (!claims) return 'null';
     return claims['given_name'];
   }
 
@@ -28,7 +28,7 @@ export class LoginUserComponent {
   }
 
   get idToken(): string {
-    this.oauthService
+    this.oauthService;
     return this.oauthService.getIdToken();
   }
 
@@ -43,5 +43,4 @@ export class LoginUserComponent {
   logout() {
     this.oauthService.logOut();
   }
-
 }

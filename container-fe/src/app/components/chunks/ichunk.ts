@@ -1,8 +1,8 @@
 export interface IChunk {
-    chunks: number,
+  chunks: number;
 }
 
 export interface IWriteChunks {
-    name: string,
-    num_chunks: number,
+  name: string;
+  num_chunks: number;
 }

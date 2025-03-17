@@ -1,6 +1,5 @@
-import { DataSource } from "@angular/cdk/collections";
-import { Observable } from "rxjs";
-
+import { DataSource } from '@angular/cdk/collections';
+import { Observable } from 'rxjs';
 
 export interface SimpleDataSource<T> extends DataSource<T> {
   connect(): Observable<T[]>;
@@ -8,9 +7,9 @@ export interface SimpleDataSource<T> extends DataSource<T> {
 }
 
 export interface Sort<T> {
-    property: keyof T;
-    order: 'asc' | 'desc';
-  }
+  property: keyof T;
+  order: 'asc' | 'desc';
+}
 
 export interface PageOptions<T> {
   page?: number;
@@ -28,8 +27,8 @@ export interface PageOptions<T> {
  * @property {PageRequest<T>} options - The options for the current page request.
  */
 export interface ListPages<C, T> {
-    ids: C[];
-    pagination: PageOptions<T>;
+  ids: C[];
+  pagination: PageOptions<T>;
 }
 
-export type PaginatedEndpoint<C, T> = (req: PageOptions<T>) => Observable<ListPages<C, T>>
+export type PaginatedEndpoint<C, T> = (req: PageOptions<T>) => Observable<ListPages<C, T>>;

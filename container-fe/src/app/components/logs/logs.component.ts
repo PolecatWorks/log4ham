@@ -11,55 +11,43 @@ import { RouterLink, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-logs',
-  imports: [
-    CommonModule, MatTableModule, MatPaginatorModule,
-    MatButtonModule,
-    RouterOutlet, RouterLink,
-  ],
+  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatButtonModule, RouterOutlet, RouterLink],
   templateUrl: './logs.component.html',
-  styleUrl: './logs.component.scss'
+  styleUrl: './logs.component.scss',
 })
 export class LogsComponent {
   displayedColumns: string[] = ['user', 'description'];
 
-
-
-  constructor(
-    private log4HamService: Log4HamService,
-  ) {
+  constructor(private log4HamService: Log4HamService) {
     // console.log("fetch for dataSource");
     // this.data.fetch(1);
   }
 
   ngAfterViewInit(): void {
-    this.data.sortBy({property: 'user', order: 'asc'});
+    this.data.sortBy({ property: 'user', order: 'asc' });
     this.data.fetch(1);
-    console.log("Have send sortBy and fetch");
+    console.log('Have send sortBy and fetch');
     // throw new Error('Method not implemented.');
   }
 
-
   data = new PaginationDataSource<Log>(
-    ( request: PageOptions<Log>) => this.log4HamService.logsGetPagedDetail(request),
-    {property: 'user', order: 'asc'},
+    (request: PageOptions<Log>) => this.log4HamService.logsGetPagedDetail(request),
+    { property: 'user', order: 'asc' },
     1
-  )
+  );
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-
   logsCreate(log: Log) {
-    this.log4HamService.logsCreate(log)
-      .subscribe({
-        next: (data) => {
-          console.log("create: ",data);
-          this.data.fetch(0);
-        },
-        error: (error) => {
-          console.error('Error:', error);
-          // this.userIds = -1;
-        }
-      });
+    this.log4HamService.logsCreate(log).subscribe({
+      next: data => {
+        console.log('create: ', data);
+        this.data.fetch(0);
+      },
+      error: error => {
+        console.error('Error:', error);
+        // this.userIds = -1;
+      },
+    });
   }
-
 }

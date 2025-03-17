@@ -7,33 +7,33 @@ import { LogsComponent } from './components/logs/logs.component';
 import { UserComponent } from './components/user/user.component';
 
 export const routes: Routes = [
-    {
-        path: 'home',
-        component: HomeComponent,
+  {
+    path: 'home',
+    component: HomeComponent,
+    children: [
+      {
+        path: 'chunks/:name',
+        component: ChunksComponent,
+      },
+      {
+        path: 'user',
+        component: LoginUserComponent,
+      },
+      {
+        path: 'users',
+        component: UsersComponent,
         children: [
-            {
-                path: 'chunks/:name',
-                component: ChunksComponent,
-            },
-            {
-                path: 'user',
-                component: LoginUserComponent,
-            },
-            {
-                path: 'users',
-                component: UsersComponent,
-                children: [
-                    {
-                      path: ':id',
-                      component: UserComponent,
-                    },
-                  ],
-              },
-            {
-                path: 'logs',
-                component: LogsComponent,
-            },
-        ]
-    },
-    { path: '**', pathMatch: 'full', redirectTo: 'home'},
+          {
+            path: ':id',
+            component: UserComponent,
+          },
+        ],
+      },
+      {
+        path: 'logs',
+        component: LogsComponent,
+      },
+    ],
+  },
+  { path: '**', pathMatch: 'full', redirectTo: 'home' },
 ];

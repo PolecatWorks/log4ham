@@ -10,47 +10,39 @@ import { FormsModule } from '@angular/forms';
 
 @Component({
   standalone: true,
-  imports: [MatButtonModule, MatFormFieldModule, MatInputModule, FormsModule,],
+  imports: [MatButtonModule, MatFormFieldModule, MatInputModule, FormsModule],
   templateUrl: './user.component.html',
-  styleUrl: './user.component.scss'
+  styleUrl: './user.component.scss',
 })
 export class UserComponent {
-
   id: number | null = null;
   user: User = {} as User;
-
 
   constructor(
     private route: ActivatedRoute,
     private log4hamService: Log4HamService,
-    private router: Router,
+    private router: Router
   ) {
-
     this.route.params
       .pipe(
-        switchMap( param => {
+        switchMap(param => {
           return this.log4hamService.usersGet(param['id']);
         })
       )
-      .subscribe(
-        params => {
-          this.user = params;
-        }
-      )
+      .subscribe(params => {
+        this.user = params;
+      });
   }
 
   submit() {
-    this.log4hamService.usersUpdate(this.user)
-      .subscribe({
-        next: (data) => {
-          console.log("updated: ",data);
-          this.router.navigate([".."],
-            {relativeTo: this.route},
-          );
-        },
-        error: (error) => {
-          console.error('Error:', error);
-        }
-      });
+    this.log4hamService.usersUpdate(this.user).subscribe({
+      next: data => {
+        console.log('updated: ', data);
+        this.router.navigate(['..'], { relativeTo: this.route });
+      },
+      error: error => {
+        console.error('Error:', error);
+      },
+    });
   }
 }
