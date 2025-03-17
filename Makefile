@@ -92,6 +92,7 @@ pg-schema-revert:
 	@cd container-be && sqlx migrate revert --database-url postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
 
 pg-test-container:
+	@kubectl delete pod pg-test-pod
 	@kubectl run -it --rm pg-test-pod --image=postgres:17.4 --env="POSTGRES_USER=${PG_USER}" --env="POSTGRES_PASSWORD=${PGPASSWORD}" --env="POSTGRES_DB=${PG_NAME}" --port=5432
 pg-test-forward:
 	kubectl port-forward pod/pg-test-pod 5432:5432
