@@ -5,6 +5,7 @@ import { LoginUserComponent } from './components/login-user/login-user.component
 import { UsersComponent } from './components/users/users.component';
 import { LogsComponent } from './components/logs/logs.component';
 import { UserComponent } from './components/user/user.component';
+import { LogComponent } from './components/log/log.component';
 
 export const routes: Routes = [
   {
@@ -24,14 +25,20 @@ export const routes: Routes = [
         component: UsersComponent,
         children: [
           {
-            path: ':id',
+            path: 'edit/:id',
             component: UserComponent,
           },
+          {
+            path: 'new',
+            component: UserComponent,
+          },
+          // {path: '*', redirectTo: '/home/users'},
         ],
       },
       {
         path: 'logs',
         component: LogsComponent,
+        children: [{ path: ':id', component: LogComponent }],
       },
     ],
   },

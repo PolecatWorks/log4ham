@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Log4HamService } from '../../services/log4ham.service';
-import { switchMap } from 'rxjs';
+import { of, switchMap } from 'rxjs';
 import { User } from '../../services/user';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,18 +15,22 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './user.component.scss',
 })
 export class UserComponent {
-  id: number | null = null;
   user: User = {} as User;
 
   constructor(
-    private route: ActivatedRoute,
+    private activatedRoute: ActivatedRoute,
     private log4hamService: Log4HamService,
     private router: Router
   ) {
-    this.route.params
+    this.activatedRoute.params
       .pipe(
         switchMap(param => {
-          return this.log4hamService.usersGet(param['id']);
+          if ('id' in param) {
+            return this.log4hamService.usersGet(param['id']);
+          } else {
+            console.log('id not provided so creating a new user');
+            return of({} as User);
+          }
         })
       )
       .subscribe(params => {
@@ -34,15 +38,40 @@ export class UserComponent {
       });
   }
 
+  private newRecord() {
+    return this.user.id === undefined;
+  }
+
   submit() {
-    this.log4hamService.usersUpdate(this.user).subscribe({
-      next: data => {
-        console.log('updated: ', data);
-        this.router.navigate(['..'], { relativeTo: this.route });
-      },
-      error: error => {
-        console.error('Error:', error);
-      },
-    });
+    if (this.newRecord()) {
+      this.log4hamService.usersCreate(this.user).subscribe({
+        next: data => {
+          console.log('Created: ', data);
+
+          this.router.navigate(['..'], { relativeTo: this.activatedRoute });
+        },
+        error: error => {
+          console.error('Error:', error);
+        },
+      });
+    } else {
+      this.log4hamService.usersUpdate(this.user).subscribe({
+        next: data => {
+          console.log('updated: ', data);
+
+          this.router.navigate(['../..'], { relativeTo: this.activatedRoute });
+        },
+        error: error => {
+          console.error('Error:', error);
+        },
+      });
+    }
+  }
+  cancel() {
+    if (this.newRecord()) {
+      this.router.navigate(['..'], { relativeTo: this.activatedRoute });
+    } else {
+      this.router.navigate(['../..'], { relativeTo: this.activatedRoute });
+    }
   }
 }

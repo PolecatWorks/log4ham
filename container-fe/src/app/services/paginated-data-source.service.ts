@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@angular/core';
 import { BehaviorSubject, combineLatest, map, Observable, Subject, switchMap } from 'rxjs';
-import { ListPages, PaginatedEndpoint, SimpleDataSource, Sort } from './pagination';
+import { ListPages, PaginatedEndpoint, SimpleDataSource, Sort, SourceUpdate } from './pagination';
 
 @Injectable({
   providedIn: 'root',
@@ -12,66 +12,28 @@ export class PaginationDataSource<T> implements SimpleDataSource<T> {
   public page: Observable<ListPages<T, T>>;
 
   datas = new BehaviorSubject<T[]>([]);
+  sourceUpdate: Observable<number>;
 
   constructor(
     @Inject('PaginatedEndpoint') endpoint: PaginatedEndpoint<T, T>,
+    @Inject('SourceUpdate') sourceUpdate: Observable<number>,
     @Inject('InitialSort') initialSort: Sort<T>,
     @Inject('InitialPage') initialPage: number
   ) {
-    this.pageNumber.subscribe({
-      next: data => {
-        console.log('pageNumber.next =', data);
-      },
-      error: error => {
-        console.log('pageNumber.error:', error);
-      },
-      complete: () => {
-        console.log('pageNumber.complete');
-      },
-    });
-
-    this.sort.subscribe({
-      next: data => {
-        console.log('sort.next =', data);
-      },
-      error: error => {
-        console.log('sort.error:', error);
-      },
-      complete: () => {
-        console.log('sort.complete');
-      },
-    });
+    this.sourceUpdate = sourceUpdate;
+    // this.sortBy(initialSort);
+    // this.fetch(initialPage);
 
     this.page = combineLatest({
+      sourceUpdate: sourceUpdate,
       sort: this.sort,
       pageNumber: this.pageNumber,
     }).pipe(
-      switchMap(({ sort, pageNumber }) => {
-        console.log('fetching page', pageNumber, 'with sort', sort);
+      switchMap(({ sourceUpdate, sort, pageNumber }) => {
+        console.log('fetching page', pageNumber, 'with sort', sort, 'on', sourceUpdate);
         return endpoint({ page: pageNumber, sort: sort, size: 10 });
       })
     );
-
-    // this.page.subscribe({
-    //   next: (data) => {
-    //     console.log("page.next =", data)
-    //   },
-    //   error: (error) => {
-    //     console.log('page.error:', error);
-    //   },
-    //   complete: () => {
-    //     console.log("page.complete")
-    //   }
-    // });
-
-    // this.pageNumber.next(initialPage);
-    // this.sort.next(initialSort);
-
-    // this.page.subscribe(
-    //   page => {
-    //     console.log("page", page);
-    //   }
-    // );
   }
 
   sortBy(sort: Sort<T>): void {

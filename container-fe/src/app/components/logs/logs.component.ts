@@ -17,10 +17,17 @@ import { RouterLink, RouterOutlet } from '@angular/router';
 })
 export class LogsComponent implements AfterViewInit {
   displayedColumns: string[] = ['user', 'description'];
+  data: PaginationDataSource<Log>;
 
   constructor(private log4HamService: Log4HamService) {
     // console.log("fetch for dataSource");
     // this.data.fetch(1);
+    this.data = new PaginationDataSource<Log>(
+      (request: PageOptions<Log>) => this.log4HamService.logsGetPagedDetail(request),
+      this.log4HamService.logsSourceUpdate(),
+      { property: 'user', order: 'asc' },
+      1
+    );
   }
 
   ngAfterViewInit(): void {
@@ -29,12 +36,6 @@ export class LogsComponent implements AfterViewInit {
     console.log('Have send sortBy and fetch');
     // throw new Error('Method not implemented.');
   }
-
-  data = new PaginationDataSource<Log>(
-    (request: PageOptions<Log>) => this.log4HamService.logsGetPagedDetail(request),
-    { property: 'user', order: 'asc' },
-    1
-  );
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 

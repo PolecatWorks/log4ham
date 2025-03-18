@@ -16,6 +16,19 @@
   border-color: currentColor;
 }
 
-.mdc-button {
-  margin-right: 12px;
+.example-spacer {
+  flex: 1 1 auto;
+}
+
+div#actions {
+  .mdc-button {
+    margin-right: 12px;
+  }
+  // button {
+  //   background: red;
+  // }
+}
+
+div#actions {
+  display: flex;
 }

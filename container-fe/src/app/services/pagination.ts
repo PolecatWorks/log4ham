@@ -32,3 +32,4 @@ export interface ListPages<C, T> {
 }
 
 export type PaginatedEndpoint<C, T> = (req: PageOptions<T>) => Observable<ListPages<C, T>>;
+export type SourceUpdate = () => Observable<number>;

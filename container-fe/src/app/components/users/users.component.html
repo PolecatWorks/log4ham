@@ -3,12 +3,10 @@
 <div class="content-wrapper">
   <h1>Users</h1>
 
-  <div>
-    <p>
-      <button mat-flat-button (click)="this.data.fetch(1)">Reload Users</button>
-      <!-- <button (click)="usersGetDetail()">Users Detail</button> -->
-      <button mat-flat-button (click)="usersCreate({ forename: 'Ben', surname: 'Greene', password: 'abc' })">New User</button>
-    </p>
+  <div id="actions">
+    <button mat-flat-button [routerLink]="['new']">New User</button>
+    <span class="example-spacer"></span>
+    <button mat-flat-button (click)="this.data.fetch(1)"><mat-icon>refresh</mat-icon>Refresh</button>
   </div>
 
   <div class="mat-elevation-z8">
@@ -30,7 +28,7 @@
 
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <!-- (click)="clickRow(row)" -->
-      <tr mat-row [routerLink]="[row.id]" *matRowDef="let row; columns: displayedColumns"></tr>
+      <tr mat-row [routerLink]="['edit', row.id]" *matRowDef="let row; columns: displayedColumns"></tr>
     </table>
     <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons aria-label="Select page of users">
       <!-- [pageIndex] = "page.pagination.page" -->

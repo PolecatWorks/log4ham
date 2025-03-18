@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { catchError, forkJoin, map, Observable, switchMap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, forkJoin, map, Observable, Subject, switchMap, throwError } from 'rxjs';
 import { User } from './user';
 import { ListPages, PageOptions } from './pagination';
 import { Log } from './log';
@@ -11,6 +11,21 @@ import { Log } from './log';
 export class Log4HamService {
   constructor(private http: HttpClient) {}
   private prefix = '/log4ham';
+
+  private usersSource = new Subject<number>();
+
+  usersSourceUpdate() {
+    return this.usersSource.asObservable();
+  }
+  usersSourceRefresh(now: number) {
+    this.usersSource.next(now);
+  }
+
+  private logsSource = new BehaviorSubject<number>(Date.now());
+
+  logsSourceUpdate() {
+    return this.logsSource.asObservable();
+  }
 
   // Define logs APIs
 
@@ -60,6 +75,11 @@ export class Log4HamService {
   // Define users APIs
   usersCreate(user: User) {
     return this.http.post(this.prefix + '/users', user).pipe(
+      map(newUser => {
+        console.log('I DID A Create');
+        this.usersSource.next(Date.now());
+        return newUser;
+      }),
       catchError(error => {
         console.error('Error:', error);
         return throwError(() => new Error('Could not create new user: ' + error.message + ' (Status code: ' + error.status + ')'));
@@ -100,7 +120,14 @@ export class Log4HamService {
       })
     );
   }
+
   usersUpdate(user: User): Observable<User> {
-    return this.http.put<User>(this.prefix + `/users/${user.id}`, user);
+    return this.http.put<User>(this.prefix + `/users/${user.id}`, user).pipe(
+      map(updatedUser => {
+        console.log('I DID AN UPDATE');
+        this.usersSource.next(Date.now());
+        return updatedUser;
+      })
+    );
   }
 }
