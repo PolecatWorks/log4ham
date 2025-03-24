@@ -25,8 +25,6 @@ impl serde_with::SerializeAs<Decimal> for SerializeDecimal {
         serializer.serialize_str(&source.to_string())
     }
 }
-// #[derive(Debug)]
-// struct MyDecimal(Decimal);
 
 impl<'de> serde_with::DeserializeAs<'de, Decimal> for SerializeDecimal {
     fn deserialize_as<D>(deserializer: D) -> Result<Decimal, D::Error>
@@ -54,10 +52,8 @@ pub(crate) struct Contact {
 
     operator_callsign: String,
     band: Band,
-    // #[serde(skip_serializing, skip_deserializing)]
-    // #[serde(serialize_with = "serialize_decimal", deserialize_with = "deserialize_decimal")]
+
     #[serde_as(as = "Option<SerializeDecimal>")]
-    // #[serde(deserialize_with = "deserialize_decimal")]
     frequency: Option<Decimal>,
     mode: Mode,
 
@@ -130,7 +126,7 @@ impl<'q> sqlx::IntoArguments<'q, Postgres> for Contact
         arguments.add(self.callsign).unwrap();
         arguments.add(self.operator_callsign).unwrap();
         arguments.add(self.band).unwrap();
-        // arguments.add(self.frequency).unwrap();
+        arguments.add(self.frequency).unwrap();
         arguments.add(self.mode).unwrap();
         arguments.add(self.rst_sent).unwrap();
         arguments.add(self.rst_received).unwrap();

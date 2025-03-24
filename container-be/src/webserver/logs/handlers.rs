@@ -91,11 +91,11 @@ async fn create_contact(pool_pg: PgPool, contact: Contact) -> Result<Contact, wa
         INSERT INTO contacts (
             user_id,
             qso_date, qso_time, callsign,
-            operator_callsign, band, mode
+            operator_callsign, band, frequency, mode
 
         )
         VALUES ($2, $3, $4, $5,
-            $6, $7::band, $8::mode
+            $6, $7::band, $8, $9::mode
             )
         RETURNING *
         "#,
