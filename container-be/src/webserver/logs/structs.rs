@@ -18,61 +18,8 @@ pub(crate) enum Mode {
     Ssb
 }
 
-fn serialize_decimal<S>(my_decimal: &Option<Decimal>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    // Mask all but first and last 2 characters
-    // let masked = if username.len() > 4 {
-    //     let first = &username[0..2];
-    //     let last = &username[username.len()-2..];
-    //     format!("{}****{}", first, last)
-    // } else {
-    //     username.to_string()
-    // };
 
-    let masked = match my_decimal {
-        Some(decimal) => decimal.to_string(),
-        None => "None".to_string(),
-    };
-
-    serializer.serialize_str(&masked)
-}
-
-fn deserialize_decimal<'de, D>(deserializer: D) -> Result<Option<Decimal>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    struct DecimalVisitor;
-
-    impl<'de> Visitor<'de> for DecimalVisitor {
-        type Value = Option<Decimal>;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a valid username string")
-        }
-
-        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-        where
-            E: serde::de::Error,
-        {
-            // Validation during deserialization
-            if value.len() < 3 {
-                return Err(serde::de::Error::custom("Username too short"));
-            }
-
-            // If the username was masked during serialization, unmask it
-            let retval = Some(Decimal::new(202, 2));
-
-            Ok(retval)
-        }
-    }
-
-    deserializer.deserialize_str(DecimalVisitor)
-}
-
-
-struct SerializeDecimal(Decimal);
+struct SerializeDecimal;
 impl serde_with::SerializeAs<Decimal> for SerializeDecimal {
     fn serialize_as<S: Serializer>(source: &Decimal, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(&source.to_string())
