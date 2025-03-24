@@ -7,31 +7,30 @@ CREATE TABLE users (
     password VARCHAR ( 50 ) NOT NULL
 );
 
-
-
 CREATE TABLE logs (
     id BIGSERIAL PRIMARY KEY,
     description VARCHAR ( 1000 ) NOT NULL,
-    "user" BIGSERIAL REFERENCES users ON DELETE RESTRICT,
+    user_id BIGSERIAL REFERENCES users ON DELETE RESTRICT,
     contacttime TIMESTAMP(0)
 );
 
 -- Below is from Claude
 
 -- Create enum types for common fields
-CREATE TYPE band_type AS ENUM ('160m', '80m', '60m', '40m', '30m', '20m', '17m', '15m', '12m', '10m', '6m', '2m', '70cm', '23cm', 'Other');
-CREATE TYPE mode_type AS ENUM ('SSB', 'AM', 'FM', 'CW', 'RTTY', 'PSK31', 'FT8', 'FT4', 'JS8', 'SSTV', 'EME', 'SATELLITE', 'Other');
+CREATE TYPE band AS ENUM ('160m', '80m', '60m', '40m', '30m', 'B20m', '17m', '15m', '12m', '10m', '6m', '2m', '70cm', '23cm', 'Other');
+CREATE TYPE mode AS ENUM ('Ssb', 'AM', 'FM', 'CW', 'RTTY', 'PSK31', 'FT8', 'FT4', 'JS8', 'SSTV', 'EME', 'SATELLITE', 'Other');
 
 -- Main contacts table
 CREATE TABLE contacts (
     contact_id SERIAL PRIMARY KEY,
+    user_id BIGSERIAL REFERENCES users(id) ON DELETE RESTRICT,
     qso_date DATE NOT NULL,
     qso_time TIME NOT NULL,
     callsign VARCHAR(10) NOT NULL,
     operator_callsign VARCHAR(10) NOT NULL,
-    band band_type NOT NULL,
+    band band NOT NULL,
     frequency NUMERIC(10, 3),  -- in MHz with 3 decimal precision
-    mode mode_type NOT NULL,
+    mode mode NOT NULL,
     rst_sent VARCHAR(3),  -- RST report sent
     rst_received VARCHAR(3),  -- RST report received
     name_received VARCHAR(50),
@@ -46,9 +45,10 @@ CREATE TABLE contacts (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- QSL card tracking
+-- -- QSL card tracking
 CREATE TABLE qsl_cards (
     qsl_id SERIAL PRIMARY KEY,
+    user_id BIGSERIAL REFERENCES users(id) ON DELETE RESTRICT,
     contact_id INTEGER REFERENCES contacts(contact_id),
     qsl_sent_date DATE,
     qsl_sent_via VARCHAR(20), -- e.g., 'direct', 'bureau', 'eQSL', 'LOTW'
@@ -57,9 +57,10 @@ CREATE TABLE qsl_cards (
     qsl_message TEXT
 );
 
--- Station equipment used
+-- -- Station equipment used
 CREATE TABLE station_setup (
     setup_id SERIAL PRIMARY KEY,
+    user_id BIGSERIAL REFERENCES users(id) ON DELETE RESTRICT,
     contact_id INTEGER REFERENCES contacts(contact_id),
     radio_model VARCHAR(100),
     antenna_type VARCHAR(100),
@@ -67,7 +68,7 @@ CREATE TABLE station_setup (
     other_equipment TEXT
 );
 
--- -- Create indexes for faster searching
+-- -- -- Create indexes for faster searching
 CREATE INDEX idx_contacts_callsign ON contacts(callsign);
 CREATE INDEX idx_contacts_date ON contacts(qso_date);
 CREATE INDEX idx_contacts_band ON contacts(band);
@@ -75,7 +76,7 @@ CREATE INDEX idx_contacts_mode ON contacts(mode);
 CREATE INDEX idx_contacts_grid ON contacts(grid_square);
 CREATE INDEX idx_contacts_country ON contacts(country);
 
--- Function to update timestamp on record changes
+-- -- Function to update timestamp on record changes
 CREATE OR REPLACE FUNCTION update_modified_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -84,7 +85,7 @@ BEGIN
 END;
 $$ LANGUAGE 'plpgsql';
 
--- Trigger to automatically update timestamp
+-- -- Trigger to automatically update timestamp
 CREATE TRIGGER update_contacts_timestamp
 BEFORE UPDATE ON contacts
 FOR EACH ROW

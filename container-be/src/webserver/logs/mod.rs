@@ -1,21 +1,24 @@
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use warp::Filter;
+mod structs;
+mod handlers;
+
 
 use super::{with_db_pool_pg, DbBigSerial, PageOptions};
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow, PartialEq, Clone)]
 pub struct Log {
     pub id: Option<DbBigSerial>,
-    pub user: DbBigSerial,
+    pub user_id: DbBigSerial,
     pub description: String,
 }
 
 impl Log {
-    pub fn new<S: Into<String>>(user: DbBigSerial, description: S) -> Self {
+    pub fn new<S: Into<String>>(user_id: DbBigSerial, description: S) -> Self {
         Self {
             id: None,
-            user,
+            user_id,
             description: description.into(),
         }
     }
@@ -23,7 +26,7 @@ impl Log {
 
 impl Log {
     pub fn content_eq(&self, other: &Self) -> bool {
-        self.user == other.user && self.description == other.description
+        self.user_id == other.user_id && self.description == other.description
     }
     pub fn id_eq(&self, other: &Self) -> bool {
         self.id == other.id
@@ -99,83 +102,6 @@ pub fn logs(
         .or(logs_delete(pool_pg))
 }
 
-pub mod handlers {
-    use crate::{
-        error::MyError,
-        webserver::{DbBigSerial, ListPages, PageOptions},
-    };
-
-    use super::Log;
-    use sqlx::PgPool;
-
-    pub async fn list(options: PageOptions, pool_pg: PgPool) -> Result<ListPages, warp::Rejection> {
-        let ids = sqlx::query_as::<_, Log>("SELECT * FROM logs")
-            .fetch_all(&pool_pg)
-            .await
-            .map_err(MyError::from)?;
-
-        let list_ids = ListPages {
-            pagination: options,
-            ids: ids.iter().map(|u| u.id.unwrap()).collect(),
-        };
-
-        Ok(list_ids)
-    }
-    pub async fn create(new_log: Log, pool_pg: PgPool) -> Result<Log, warp::Rejection> {
-        let log = sqlx::query_as::<_, Log>(
-            "INSERT INTO logs (\"user\", description) VALUES ($1, $2) RETURNING *",
-        )
-        .bind(new_log.user)
-        .bind(new_log.description)
-        .fetch_one(&pool_pg)
-        .await
-        .map_err(MyError::from)?;
-
-        Ok(log)
-    }
-
-    pub async fn read(id: DbBigSerial, pool_pg: PgPool) -> Result<Log, warp::Rejection> {
-        let log = sqlx::query_as::<_, Log>("SELECT * FROM logs WHERE id = $1")
-            .bind(id)
-            .fetch_one(&pool_pg)
-            .await
-            .map_err(MyError::from)?;
-
-        Ok(log)
-    }
-
-    pub async fn update(
-        id: DbBigSerial,
-        log: Log,
-        pool_pg: PgPool,
-    ) -> Result<Log, warp::Rejection> {
-        if log.id.is_none() || id != log.id.unwrap() {
-            return Err(MyError::Message("ids on path and body must match for update").into());
-        }
-
-        let log = sqlx::query_as::<_, Log>(
-            "UPDATE logs SET \"user\" = $2, description = $3 WHERE id = $1 RETURNING *",
-        )
-        .bind(id)
-        .bind(log.user)
-        .bind(log.description)
-        .fetch_one(&pool_pg)
-        .await
-        .map_err(MyError::from)?;
-
-        Ok(log)
-    }
-
-    pub async fn delete(id: DbBigSerial, pool_pg: PgPool) -> Result<Log, warp::Rejection> {
-        let log = sqlx::query_as::<_, Log>("DELETE FROM logs WHERE id = $1 RETURNING *")
-            .bind(id)
-            .fetch_one(&pool_pg)
-            .await
-            .map_err(MyError::from)?;
-
-        Ok(log)
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -292,7 +218,7 @@ mod tests {
 
         let log_update = Log {
             id: log.id,
-            user: user.id.unwrap(),
+            user_id: user.id.unwrap(),
             description: "updated log".to_string(),
         };
 
@@ -403,7 +329,7 @@ mod tests {
         // Update
         let log_update = Log {
             id: log.id,
-            user: log.user,
+            user_id: log.user_id,
             description: "updated log".to_string(),
         };
         let resp = warp::test::request()
