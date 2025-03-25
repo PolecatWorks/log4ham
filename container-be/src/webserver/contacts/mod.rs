@@ -1,3 +1,6 @@
+
+mod handlers;
+
 use crate::{
     error::MyError,
     webserver::{DbBigSerial, ListPages, PageOptions},

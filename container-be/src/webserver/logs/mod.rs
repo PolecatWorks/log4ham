@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use warp::Filter;
-mod contacts;
 mod handlers;
 
 use super::{with_db_pool_pg, DbBigSerial, PageOptions};

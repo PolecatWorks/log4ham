@@ -1,5 +1,6 @@
 pub mod logs;
 pub mod users;
+pub mod contacts;
 
 use figment::{
     providers::{Format, Yaml},
