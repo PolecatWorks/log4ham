@@ -1,11 +1,9 @@
-
-
 use crate::{
     error::MyError,
     webserver::{DbBigSerial, ListPages, PageOptions},
 };
 
-use super::structs::Contact;
+use super::contacts::Contact;
 use super::Log;
 use sqlx::PgPool;
 
@@ -45,11 +43,7 @@ pub async fn read(id: DbBigSerial, pool_pg: PgPool) -> Result<Log, warp::Rejecti
     Ok(log)
 }
 
-pub async fn update(
-    id: DbBigSerial,
-    log: Log,
-    pool_pg: PgPool,
-) -> Result<Log, warp::Rejection> {
+pub async fn update(id: DbBigSerial, log: Log, pool_pg: PgPool) -> Result<Log, warp::Rejection> {
     if log.id.is_none() || id != log.id.unwrap() {
         return Err(MyError::Message("ids on path and body must match for update").into());
     }
@@ -77,8 +71,8 @@ pub async fn delete(id: DbBigSerial, pool_pg: PgPool) -> Result<Log, warp::Rejec
     Ok(log)
 }
 
-async fn create_contact(pool_pg: PgPool, contact: Contact) -> Result<Contact, warp::Rejection>  {
-    let record= sqlx::query_as_with (
+async fn create_contact(pool_pg: PgPool, contact: Contact) -> Result<Contact, warp::Rejection> {
+    let record = sqlx::query_as_with(
         // rst_sent, rst_received, name_received, qth_received,
         // grid_square, country, state_province, county,
         // notes, is_confirmed
@@ -86,7 +80,6 @@ async fn create_contact(pool_pg: PgPool, contact: Contact) -> Result<Contact, wa
         // $9, $10, $11, $12,
         // $13, $14, $15, $16,
         // $17, $18
-
         r#"
         INSERT INTO contacts (
             user_id,
@@ -99,7 +92,7 @@ async fn create_contact(pool_pg: PgPool, contact: Contact) -> Result<Contact, wa
             )
         RETURNING *
         "#,
-        contact
+        contact,
     )
     .fetch_one(&pool_pg)
     .await
@@ -110,8 +103,11 @@ async fn create_contact(pool_pg: PgPool, contact: Contact) -> Result<Contact, wa
 
 #[cfg(test)]
 mod tests {
+    use crate::webserver::{
+        logs::{contacts, handlers::create_contact},
+        users,
+    };
     use sqlx::{types::Decimal, PgPool, Row};
-    use crate::webserver::{logs::{handlers::create_contact, structs}, users};
 
     #[sqlx::test(migrations = false)]
     async fn db_connectivity(pool: PgPool) -> sqlx::Result<()> {
@@ -124,23 +120,32 @@ mod tests {
 
     /// Test out the create_contact
     #[sqlx::test()]
-    async fn create_contact_test(pool: PgPool) -> sqlx::Result<()> {
+    async fn create_minimal_contact_test(pool: PgPool) -> sqlx::Result<()> {
+        let user =
+            users::handlers::create(users::User::new("test", "user", "password"), pool.clone())
+                .await
+                .unwrap();
 
-        let user = users::handlers::create( users::User::new("test", "user", "password"), pool.clone())
-            .await
-            .unwrap();
-
-        let new_contact = structs::Contact::new(
-            None, user.id.unwrap(),
-            chrono::NaiveDate::parse_from_str("2023-01-01", "%Y-%m-%d").unwrap(), chrono::NaiveTime::parse_from_str("12:00", "%H:%M").unwrap(), "CALLSIGN".to_string(),
-            "MI7IEU".to_string(), structs::Band::B20m, Some(Decimal::new(202, 2)), structs::Mode::Ssb,
-
-            Some("59".to_string()), Some("59".to_string()), Some("NAME".to_string()), Some("QTH".to_string()),
-
-            Some("GRID".to_string()), Some("COUNTRY".to_string()), Some("STATE".to_string()),
-
-            Some("COUNTY".to_string()), Some("NOTES".to_string()), true
-
+        let new_contact = contacts::Contact::new(
+            None,
+            user.id.unwrap(),
+            chrono::NaiveDate::parse_from_str("2023-01-01", "%Y-%m-%d").unwrap(),
+            chrono::NaiveTime::parse_from_str("12:00", "%H:%M").unwrap(),
+            "CALLSIGN".to_string(),
+            "MI7IEU".to_string(),
+            contacts::Band::B20m,
+            Some(Decimal::new(202, 2)),
+            contacts::Mode::Ssb,
+            Some("59".to_string()),
+            Some("59".to_string()),
+            Some("NAME".to_string()),
+            Some("QTH".to_string()),
+            Some("GRID".to_string()),
+            Some("COUNTRY".to_string()),
+            Some("STATE".to_string()),
+            Some("COUNTY".to_string()),
+            Some("NOTES".to_string()),
+            true,
         );
         let created_contact = create_contact(pool, new_contact).await.unwrap();
         println!("created contact: {:?}", created_contact);

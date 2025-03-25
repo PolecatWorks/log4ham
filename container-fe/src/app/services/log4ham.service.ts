@@ -1,8 +1,8 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, catchError, forkJoin, map, Observable, Subject, switchMap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, forkJoin, map, Observable, Subject, switchMap, tap, throwError } from 'rxjs';
 import { User } from './user';
-import { ListPages, PageOptions } from './pagination';
+import { asHttpParams, ListPages, PageOptions } from './pagination';
 import { Log } from './log';
 
 @Injectable({
@@ -75,10 +75,9 @@ export class Log4HamService {
   // Define users APIs
   usersCreate(user: User) {
     return this.http.post(this.prefix + '/users', user).pipe(
-      map(newUser => {
+      tap(newUser => {
         console.log('I DID A Create');
         this.usersSource.next(Date.now());
-        return newUser;
       }),
       catchError(error => {
         console.error('Error:', error);
@@ -102,7 +101,8 @@ export class Log4HamService {
   }
 
   usersGetPagedIds(query: PageOptions<User>) {
-    const params = new HttpParams({ fromObject: query as any });
+
+    const params = asHttpParams(query);
 
     return this.http.get<ListPages<number, User>>(this.prefix + '/users', { params: params }).pipe(
       catchError(error => {
@@ -123,10 +123,9 @@ export class Log4HamService {
 
   usersUpdate(user: User): Observable<User> {
     return this.http.put<User>(this.prefix + `/users/${user.id}`, user).pipe(
-      map(updatedUser => {
+      tap(updatedUser => {
         console.log('I DID AN UPDATE');
         this.usersSource.next(Date.now());
-        return updatedUser;
       })
     );
   }

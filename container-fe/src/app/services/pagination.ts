@@ -1,4 +1,5 @@
 import { DataSource } from '@angular/cdk/collections';
+import { HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface SimpleDataSource<T> extends DataSource<T> {
@@ -15,6 +16,23 @@ export interface PageOptions<T> {
   page?: number;
   size: number;
   sort?: Sort<T>;
+}
+
+export function asHttpParams<T>(options: PageOptions<T>): HttpParams {
+
+  var simpleObj: { [id: string] : string; } = {};
+
+  simpleObj['size'] = String(options.size);
+
+  if (options.page != undefined) {
+    simpleObj['page'] = String(options.page);
+  }
+  if (options.sort != undefined) {
+    simpleObj["sortProperty"] = String(options.sort.property);
+    simpleObj["sortOrder"] =  options.sort.order;
+  }
+
+  return new HttpParams({fromObject: simpleObj});
 }
 
 /**

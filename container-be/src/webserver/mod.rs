@@ -106,7 +106,6 @@ impl warp::Reply for ListPages {
     }
 }
 
-
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebServiceConfig {
     /// Prefix of the served API

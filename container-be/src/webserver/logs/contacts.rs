@@ -1,12 +1,13 @@
-
-
-
+use crate::{
+    error::MyError,
+    webserver::{DbBigSerial, ListPages, PageOptions},
+};
+use ::chrono::{DateTime, Utc};
+use chrono::{NaiveDate, NaiveTime};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
-use sqlx::{types::chrono, Arguments, Postgres};
-use chrono::{NaiveDate, NaiveTime};
 use sqlx::types::Decimal;
-use crate::webserver::DbBigSerial;
+use sqlx::{types::chrono, Arguments, PgPool, Postgres};
 
 #[derive(sqlx::Type, Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub(crate) enum Band {
@@ -42,7 +43,6 @@ pub(crate) enum Mode {
     Other,
 }
 
-
 struct SerializeDecimal;
 impl serde_with::SerializeAs<Decimal> for SerializeDecimal {
     fn serialize_as<S: Serializer>(source: &Decimal, serializer: S) -> Result<S::Ok, S::Error> {
@@ -60,16 +60,13 @@ impl<'de> serde_with::DeserializeAs<'de, Decimal> for SerializeDecimal {
     }
 }
 
-
-
-
 // Define structs to represent our database tables
 #[serde_with::serde_as]
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow, Clone, PartialEq)]
 /// Represents a contact log entry.
 pub(crate) struct Contact {
     /// The unique identifier for the contact.
-    contact_id: Option<i32>,
+    id: Option<DbBigSerial>,
 
     /// The unique identifier for the user.
     user_id: DbBigSerial,
@@ -127,23 +124,36 @@ pub(crate) struct Contact {
     is_confirmed: bool,
 
     // The timestamp when the contact was created.
-    // created_at: Option<DateTime<Utc>>,
+    created_at: Option<DateTime<Utc>>,
 
     // The timestamp when the contact was last updated.
-    // updated_at: Option<DateTime<Utc>>,
+    updated_at: Option<DateTime<Utc>>,
 }
 
 impl Contact {
     pub fn new(
-        contact_id: Option<i32>, user_id: DbBigSerial,
-        qso_date: NaiveDate, qso_time: NaiveTime, callsign: String,
-        operator_callsign: String, band: Band, frequency: Option<Decimal>, mode: Mode,
-        rst_sent: Option<String>, rst_received: Option<String>, name_received: Option<String>, qth_received: Option<String>,
-        grid_square: Option<String>, country: Option<String>, state_province: Option<String>, county: Option<String>,
-        notes: Option<String>, is_confirmed: bool,
-        ) -> Self {
+        id: Option<DbBigSerial>,
+        user_id: DbBigSerial,
+        qso_date: NaiveDate,
+        qso_time: NaiveTime,
+        callsign: String,
+        operator_callsign: String,
+        band: Band,
+        frequency: Option<Decimal>,
+        mode: Mode,
+        rst_sent: Option<String>,
+        rst_received: Option<String>,
+        name_received: Option<String>,
+        qth_received: Option<String>,
+        grid_square: Option<String>,
+        country: Option<String>,
+        state_province: Option<String>,
+        county: Option<String>,
+        notes: Option<String>,
+        is_confirmed: bool,
+    ) -> Self {
         Self {
-            contact_id,
+            id,
             user_id,
             qso_date: NaiveDate::from_ymd_opt(2021, 1, 1).unwrap(),
             qso_time: NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
@@ -166,20 +176,16 @@ impl Contact {
 
             notes,
             is_confirmed,
-            // created_at: None,
-            // updated_at: None,
-
+            created_at: None,
+            updated_at: None,
         }
     }
 }
 
-
-
-impl<'q> sqlx::IntoArguments<'q, Postgres> for Contact
-{
+impl<'q> sqlx::IntoArguments<'q, Postgres> for Contact {
     fn into_arguments(self) -> <sqlx::Postgres as sqlx::Database>::Arguments<'q> {
         let mut arguments = <sqlx::Postgres as sqlx::Database>::Arguments::default();
-        arguments.add(self.contact_id).unwrap();
+        arguments.add(self.id).unwrap();
         arguments.add(self.user_id).unwrap();
         arguments.add(self.qso_date).unwrap();
         arguments.add(self.qso_time).unwrap();
@@ -203,7 +209,6 @@ impl<'q> sqlx::IntoArguments<'q, Postgres> for Contact
     }
 }
 
-
 #[derive(Debug)]
 struct QslCard {
     qsl_id: Option<i32>,
@@ -225,11 +230,24 @@ struct StationSetup {
     other_equipment: Option<String>,
 }
 
+pub async fn list(options: PageOptions, pool_pg: PgPool) -> Result<ListPages, warp::Rejection> {
+    let ids = sqlx::query_as::<_, Contact>("SELECT * FROM contacts")
+        .fetch_all(&pool_pg)
+        .await
+        .map_err(MyError::from)?;
+
+    let list_ids = ListPages {
+        pagination: options,
+        ids: ids.iter().map(|u| u.id.unwrap()).collect(),
+    };
+
+    Ok(list_ids)
+}
+
 #[cfg(test)]
 mod tests {
-    use sqlx::types::Decimal;
     use super::*;
-
+    use sqlx::types::Decimal;
 
     // Test the serialisation of Decimal
     #[test]
@@ -257,21 +275,33 @@ mod tests {
     /// Test the serialisation of Contact using serde_json
     #[test]
     fn test_contact_serialization() {
-        let contact = crate::webserver::logs::structs::Contact::new(
-            None, 1,
-            chrono::NaiveDate::parse_from_str("2023-01-01", "%Y-%m-%d").unwrap(), chrono::NaiveTime::parse_from_str("12:00", "%H:%M").unwrap(), "CALLSIGN".to_string(),
-            "MI7IEU".to_string(), Band::B20m, Some(Decimal::new(202, 2)), Mode::Ssb,
-            Some("59".to_string()), Some("59".to_string()), Some("John".to_string()), Some("Belfast".to_string()),
-            Some("IO64".to_string()), Some("United Kingdom".to_string()), Some("Northern Ireland".to_string()), Some("Antrim".to_string()),
-            Some("Some notes".to_string()), true,
+        let contact = Contact::new(
+            None,
+            1,
+            chrono::NaiveDate::parse_from_str("2023-01-01", "%Y-%m-%d").unwrap(),
+            chrono::NaiveTime::parse_from_str("12:00", "%H:%M").unwrap(),
+            "CALLSIGN".to_string(),
+            "MI7IEU".to_string(),
+            Band::B20m,
+            Some(Decimal::new(202, 2)),
+            Mode::Ssb,
+            Some("59".to_string()),
+            Some("59".to_string()),
+            Some("John".to_string()),
+            Some("Belfast".to_string()),
+            Some("IO64".to_string()),
+            Some("United Kingdom".to_string()),
+            Some("Northern Ireland".to_string()),
+            Some("Antrim".to_string()),
+            Some("Some notes".to_string()),
+            true,
         );
 
         let encoded = serde_json::to_string(&contact).unwrap();
 
-        let decoded: crate::webserver::logs::structs::Contact = serde_json::from_str(&encoded).unwrap();
+        let decoded: Contact = serde_json::from_str(&encoded).unwrap();
 
         assert_eq!(contact, decoded);
         eprintln!("encoded: {}", encoded);
     }
-
 }

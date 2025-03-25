@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use warp::Filter;
-mod structs;
+mod contacts;
 mod handlers;
-
 
 use super::{with_db_pool_pg, DbBigSerial, PageOptions};
 
@@ -101,7 +100,6 @@ pub fn logs(
         .or(logs_update(pool_pg.clone()))
         .or(logs_delete(pool_pg))
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -94,7 +94,7 @@ fn main() -> Result<(), MyError> {
                 .unwrap_or_else(|err| {
                     error!("Config file {config:?} failed with error \n{err:#?}");
                     panic!("Config failed to load");
-            });
+                });
 
             debug!("Loaded config {:?}", config);
 
@@ -110,7 +110,6 @@ fn main() -> Result<(), MyError> {
             info!("Loaded config {:#?}", config);
 
             db_check(config.persistence)?;
-
         }
         Commands::ConfigCheck { config, secrets } => {
             info!("Config check {NAME} for {VERSION}");

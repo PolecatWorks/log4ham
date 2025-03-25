@@ -22,7 +22,7 @@ CREATE TYPE mode AS ENUM ('Ssb', 'AM', 'FM', 'CW', 'RTTY', 'PSK31', 'FT8', 'FT4'
 
 -- Main contacts table
 CREATE TABLE contacts (
-    contact_id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     user_id BIGSERIAL REFERENCES users(id) ON DELETE RESTRICT,
     qso_date DATE NOT NULL,
     qso_time TIME NOT NULL,
@@ -48,8 +48,7 @@ CREATE TABLE contacts (
 -- -- QSL card tracking
 CREATE TABLE qsl_cards (
     qsl_id SERIAL PRIMARY KEY,
-    user_id BIGSERIAL REFERENCES users(id) ON DELETE RESTRICT,
-    contact_id INTEGER REFERENCES contacts(contact_id),
+    contact_id INTEGER REFERENCES contacts(id) ON DELETE RESTRICT,
     qsl_sent_date DATE,
     qsl_sent_via VARCHAR(20), -- e.g., 'direct', 'bureau', 'eQSL', 'LOTW'
     qsl_received_date DATE,
@@ -60,8 +59,7 @@ CREATE TABLE qsl_cards (
 -- -- Station equipment used
 CREATE TABLE station_setup (
     setup_id SERIAL PRIMARY KEY,
-    user_id BIGSERIAL REFERENCES users(id) ON DELETE RESTRICT,
-    contact_id INTEGER REFERENCES contacts(contact_id),
+    contact_id INTEGER REFERENCES contacts(id) ON DELETE RESTRICT,
     radio_model VARCHAR(100),
     antenna_type VARCHAR(100),
     power_output NUMERIC(6, 1),  -- in watts
