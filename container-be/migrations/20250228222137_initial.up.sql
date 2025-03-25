@@ -17,8 +17,8 @@ CREATE TABLE logs (
 -- Below is from Claude
 
 -- Create enum types for common fields
-CREATE TYPE band AS ENUM ('160m', '80m', '60m', '40m', '30m', 'B20m', '17m', '15m', '12m', '10m', '6m', '2m', '70cm', '23cm', 'Other');
-CREATE TYPE mode AS ENUM ('Ssb', 'AM', 'FM', 'CW', 'RTTY', 'PSK31', 'FT8', 'FT4', 'JS8', 'SSTV', 'EME', 'SATELLITE', 'Other');
+CREATE TYPE band AS ENUM ('B160m', 'B80m', 'B60m', 'B40m', 'B30m', 'B20m', 'B17m', 'B15m', 'B12m', 'B10m', 'B6m', 'B2m', 'B70cm', 'B23cm', 'Other');
+CREATE TYPE mode AS ENUM ('Ssb', 'AM', 'FM', 'Cw', 'RTTY', 'PSK31', 'FT8', 'FT4', 'JS8', 'SSTV', 'EME', 'SATELLITE', 'Other');
 
 -- Main contacts table
 CREATE TABLE contacts (

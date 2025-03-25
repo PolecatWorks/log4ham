@@ -104,6 +104,16 @@ pub async fn update(
     Ok(record)
 }
 
+pub async fn delete(pool_pg: PgPool, id: DbBigSerial) -> Result<Contact, warp::Rejection> {
+    let record = sqlx::query_as::<_, Contact>("DELETE FROM contacts WHERE id = $1 RETURNING *")
+        .bind(id)
+        .fetch_one(&pool_pg)
+        .await
+        .map_err(MyError::from)?;
+
+    Ok(record)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -334,6 +344,62 @@ mod tests {
 
         assert!(my_update.content_eq(&updated_contact));
         assert!(!my_update.content_eq(&created_contact));
+        Ok(())
+    }
+
+    /// Test out the delete returns error when no user matches
+    #[sqlx::test()]
+    async fn delete_contact_not_found(pool: PgPool) -> sqlx::Result<()> {
+        let my_delete = delete(pool.clone(), 1).await;
+
+        assert!(my_delete.is_err());
+
+        Ok(())
+    }
+
+    /// Test out the delete returns deleted contact when user matches
+    /// and the contact is deleted
+    #[sqlx::test()]
+    async fn delete_contact_found(pool: PgPool) -> sqlx::Result<()> {
+        let user =
+            users::handlers::create(users::User::new("test", "user", "password"), pool.clone())
+                .await
+                .unwrap();
+
+        let new_contact = Contact::new(
+            None,
+            user.id.unwrap(),
+            chrono::NaiveDate::parse_from_str("2023-01-01", "%Y-%m-%d").unwrap(),
+            chrono::NaiveTime::parse_from_str("12:00", "%H:%M").unwrap(),
+            "CALLSIGN".to_string(),
+            "MI7IEU".to_string(),
+            Band::B20m,
+            Some(Decimal::new(202, 2)),
+            Mode::Ssb,
+            Some("59".to_string()),
+            Some("59".to_string()),
+            Some("NAME".to_string()),
+            Some("QTH".to_string()),
+            Some("GRID".to_string()),
+            Some("COUNTRY".to_string()),
+            Some("STATE".to_string()),
+            Some("COUNTY".to_string()),
+            Some("NOTES".to_string()),
+            true,
+        );
+
+        let created_contact = create(pool.clone(), new_contact).await.unwrap();
+        println!("created contact: {:?}", created_contact);
+
+        let my_delete = delete(pool.clone(), created_contact.id.unwrap())
+            .await
+            .unwrap();
+        println!("deleted contact: {:?}", my_delete);
+
+        let my_list = list(PageOptions::default(), pool.clone()).await.unwrap();
+
+        assert_eq!(my_list.ids.len(), 0);
+
         Ok(())
     }
 }
