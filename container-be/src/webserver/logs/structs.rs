@@ -1,21 +1,45 @@
 
-use std::fmt;
 
-use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
+
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
-use sqlx::{types::{chrono}, Arguments, Postgres};
-use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
+use sqlx::{types::chrono, Arguments, Postgres};
+use chrono::{NaiveDate, NaiveTime};
 use sqlx::types::Decimal;
 use crate::webserver::DbBigSerial;
 
 #[derive(sqlx::Type, Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub(crate) enum Band {
-    B20m
+    B160m,
+    B80m,
+    B40m,
+    B20m,
+    B17m,
+    B15m,
+    B12m,
+    B10m,
+    B6m,
+    B2m,
+    B70cm,
+    B23cm,
+    Other,
 }
 
 #[derive(sqlx::Type, Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub(crate) enum Mode {
-    Ssb
+    Ssb,
+    Am,
+    Fm,
+    Cw,
+    Rtty,
+    Psk31,
+    FT8,
+    FT4,
+    JS8,
+    Sstv,
+    Eme,
+    Satellite,
+    Other,
 }
 
 
@@ -39,37 +63,73 @@ impl<'de> serde_with::DeserializeAs<'de, Decimal> for SerializeDecimal {
 
 
 
-
 // Define structs to represent our database tables
 #[serde_with::serde_as]
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow, Clone, PartialEq)]
+/// Represents a contact log entry.
 pub(crate) struct Contact {
+    /// The unique identifier for the contact.
     contact_id: Option<i32>,
+
+    /// The unique identifier for the user.
     user_id: DbBigSerial,
+
+    /// The date of the QSO (contact).
     qso_date: NaiveDate,
+
+    /// The time of the QSO (contact).
     qso_time: NaiveTime,
+
+    /// The callsign of the contacted station.
     callsign: String,
 
+    /// The callsign of the operator.
     operator_callsign: String,
+
+    /// The band on which the contact was made.
     band: Band,
 
+    /// The frequency of the contact, serialized as an optional decimal.
     #[serde_as(as = "Option<SerializeDecimal>")]
     frequency: Option<Decimal>,
+
+    /// The mode of the contact (e.g., CW, SSB).
     mode: Mode,
 
+    /// The RST (Readability, Signal, Tone) report sent.
     rst_sent: Option<String>,
+
+    /// The RST (Readability, Signal, Tone) report received.
     rst_received: Option<String>,
+
+    /// The name received during the contact.
     name_received: Option<String>,
+
+    /// The QTH (location) received during the contact.
     qth_received: Option<String>,
 
+    /// The grid square of the contacted station.
     grid_square: Option<String>,
+
+    /// The country of the contacted station.
     country: Option<String>,
+
+    /// The state or province of the contacted station.
     state_province: Option<String>,
+
+    /// The county of the contacted station.
     county: Option<String>,
 
+    /// Additional notes about the contact.
     notes: Option<String>,
+
+    /// Indicates whether the contact is confirmed.
     is_confirmed: bool,
+
+    // The timestamp when the contact was created.
     // created_at: Option<DateTime<Utc>>,
+
+    // The timestamp when the contact was last updated.
     // updated_at: Option<DateTime<Utc>>,
 }
 
@@ -168,6 +228,7 @@ struct StationSetup {
 #[cfg(test)]
 mod tests {
     use sqlx::types::Decimal;
+    use super::*;
 
 
     // Test the serialisation of Decimal
@@ -199,7 +260,7 @@ mod tests {
         let contact = crate::webserver::logs::structs::Contact::new(
             None, 1,
             chrono::NaiveDate::parse_from_str("2023-01-01", "%Y-%m-%d").unwrap(), chrono::NaiveTime::parse_from_str("12:00", "%H:%M").unwrap(), "CALLSIGN".to_string(),
-            "MI7IEU".to_string(), crate::webserver::logs::structs::Band::B20m, Some(Decimal::new(202, 2)), crate::webserver::logs::structs::Mode::Ssb,
+            "MI7IEU".to_string(), Band::B20m, Some(Decimal::new(202, 2)), Mode::Ssb,
             Some("59".to_string()), Some("59".to_string()), Some("John".to_string()), Some("Belfast".to_string()),
             Some("IO64".to_string()), Some("United Kingdom".to_string()), Some("Northern Ireland".to_string()), Some("Antrim".to_string()),
             Some("Some notes".to_string()), true,
@@ -210,7 +271,7 @@ mod tests {
         let decoded: crate::webserver::logs::structs::Contact = serde_json::from_str(&encoded).unwrap();
 
         assert_eq!(contact, decoded);
-        println!("encoded: {}", encoded);
+        eprintln!("encoded: {}", encoded);
     }
 
 }
