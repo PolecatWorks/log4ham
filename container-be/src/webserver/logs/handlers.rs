@@ -1,24 +1,25 @@
 use crate::{
     error::MyError,
-    webserver::{DbBigSerial, ListPages, PageOptions},
+    webserver::{DbBigSerial, DbId, ListPages, PageOptions},
 };
 
 use super::Log;
 use sqlx::PgPool;
 
 pub async fn list(options: PageOptions, pool_pg: PgPool) -> Result<ListPages, warp::Rejection> {
-    let ids = sqlx::query_as::<_, Log>("SELECT * FROM logs")
+    let ids = sqlx::query_as::<_, DbId>("SELECT id FROM logs")
         .fetch_all(&pool_pg)
         .await
         .map_err(MyError::from)?;
 
     let list_ids = ListPages {
         pagination: options,
-        ids: ids.iter().map(|u| u.id.unwrap()).collect(),
+        ids: ids.iter().map(|u| u.id).collect(),
     };
 
     Ok(list_ids)
 }
+
 pub async fn create(new_log: Log, pool_pg: PgPool) -> Result<Log, warp::Rejection> {
     let log = sqlx::query_as::<_, Log>(
         "INSERT INTO logs (user_id, description) VALUES ($1, $2) RETURNING *",

@@ -1,6 +1,6 @@
+pub mod contacts;
 pub mod logs;
 pub mod users;
-pub mod contacts;
 
 use figment::{
     providers::{Format, Yaml},
@@ -95,7 +95,7 @@ impl PageOptions {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ListPages {
     ids: Vec<DbBigSerial>,
     pagination: PageOptions,

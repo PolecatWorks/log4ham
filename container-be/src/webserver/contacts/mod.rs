@@ -1,4 +1,3 @@
-
 mod handlers;
 
 use crate::{
@@ -185,6 +184,30 @@ impl Contact {
     }
 }
 
+impl Contact {
+    /// Compare the content of the Contact object no the id or created_ad or updated_ad fields
+    pub fn content_eq(&self, other: &Self) -> bool {
+        self.user_id == other.user_id
+            && self.qso_date == other.qso_date
+            && self.qso_time == other.qso_time
+            && self.callsign == other.callsign
+            && self.operator_callsign == other.operator_callsign
+            && self.band == other.band
+            && self.frequency == other.frequency
+            && self.mode == other.mode
+            && self.rst_sent == other.rst_sent
+            && self.rst_received == other.rst_received
+            && self.name_received == other.name_received
+            && self.qth_received == other.qth_received
+            && self.grid_square == other.grid_square
+            && self.country == other.country
+            && self.state_province == other.state_province
+            && self.county == other.county
+            && self.notes == other.notes
+            && self.is_confirmed == other.is_confirmed
+    }
+}
+
 impl<'q> sqlx::IntoArguments<'q, Postgres> for Contact {
     fn into_arguments(self) -> <sqlx::Postgres as sqlx::Database>::Arguments<'q> {
         let mut arguments = <sqlx::Postgres as sqlx::Database>::Arguments::default();
@@ -210,27 +233,6 @@ impl<'q> sqlx::IntoArguments<'q, Postgres> for Contact {
         // arguments.add(self.qso_date).unwrap();
         arguments
     }
-}
-
-#[derive(Debug)]
-struct QslCard {
-    qsl_id: Option<i32>,
-    contact_id: i32,
-    qsl_sent_date: Option<NaiveDate>,
-    qsl_sent_via: Option<String>,
-    qsl_received_date: Option<NaiveDate>,
-    qsl_received_via: Option<String>,
-    qsl_message: Option<String>,
-}
-
-#[derive(Debug)]
-struct StationSetup {
-    setup_id: Option<i32>,
-    contact_id: i32,
-    radio_model: Option<String>,
-    antenna_type: Option<String>,
-    power_output: Option<f64>,
-    other_equipment: Option<String>,
 }
 
 pub async fn list(options: PageOptions, pool_pg: PgPool) -> Result<ListPages, warp::Rejection> {
