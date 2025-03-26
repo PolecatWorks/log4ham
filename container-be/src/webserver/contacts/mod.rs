@@ -1,4 +1,5 @@
 mod handlers;
+mod routes;
 
 use crate::{
     error::MyError,
@@ -185,7 +186,7 @@ impl Contact {
 }
 
 impl Contact {
-    /// Compare the content of the Contact object no the id or created_ad or updated_ad fields
+    /// Compare the content of the Contact object not the id or created_ad or updated_ad fields
     pub fn content_eq(&self, other: &Self) -> bool {
         self.user_id == other.user_id
             && self.qso_date == other.qso_date
@@ -233,20 +234,6 @@ impl<'q> sqlx::IntoArguments<'q, Postgres> for Contact {
         // arguments.add(self.qso_date).unwrap();
         arguments
     }
-}
-
-pub async fn list(options: PageOptions, pool_pg: PgPool) -> Result<ListPages, warp::Rejection> {
-    let ids = sqlx::query_as::<_, Contact>("SELECT * FROM contacts")
-        .fetch_all(&pool_pg)
-        .await
-        .map_err(MyError::from)?;
-
-    let list_ids = ListPages {
-        pagination: options,
-        ids: ids.iter().map(|u| u.id.unwrap()).collect(),
-    };
-
-    Ok(list_ids)
 }
 
 #[cfg(test)]

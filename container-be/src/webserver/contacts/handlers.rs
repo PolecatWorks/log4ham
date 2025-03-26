@@ -21,7 +21,7 @@ pub async fn list(options: PageOptions, pool_pg: PgPool) -> Result<ListPages, wa
     Ok(list_ids)
 }
 
-async fn create(pool_pg: PgPool, contact: Contact) -> Result<Contact, warp::Rejection> {
+pub(crate) async fn create(pool_pg: PgPool, contact: Contact) -> Result<Contact, warp::Rejection> {
     let record = sqlx::query_as_with(
         // rst_sent, rst_received, name_received, qth_received,
         // grid_square, country, state_province, county,
@@ -34,11 +34,17 @@ async fn create(pool_pg: PgPool, contact: Contact) -> Result<Contact, warp::Reje
         INSERT INTO contacts (
             user_id,
             qso_date, qso_time, callsign,
-            operator_callsign, band, frequency, mode
+            operator_callsign, band, frequency, mode,
+            rst_sent, rst_received, name_received, qth_received,
+            grid_square, country, state_province, county,
+            notes, is_confirmed
 
         )
         VALUES ($2, $3, $4, $5,
-            $6, $7::band, $8, $9::mode
+            $6, $7::band, $8, $9::mode,
+            $10, $11, $12, $13,
+            $14, $15, $16, $17,
+            $18, $19
             )
         RETURNING *
         "#,
