@@ -47,7 +47,7 @@ CREATE TABLE contacts (
 
 -- -- QSL card tracking
 CREATE TABLE qsl_cards (
-    qsl_id SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     contact_id INTEGER REFERENCES contacts(id) ON DELETE RESTRICT,
     qsl_sent_date DATE,
     qsl_sent_via VARCHAR(20), -- e.g., 'direct', 'bureau', 'eQSL', 'LOTW'
@@ -58,7 +58,7 @@ CREATE TABLE qsl_cards (
 
 -- -- Station equipment used
 CREATE TABLE station_setup (
-    setup_id SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     contact_id INTEGER REFERENCES contacts(id) ON DELETE RESTRICT,
     radio_model VARCHAR(100),
     antenna_type VARCHAR(100),
