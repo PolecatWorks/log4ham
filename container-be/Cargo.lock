@@ -1667,6 +1667,7 @@ dependencies = [
  "chrono",
  "clap",
  "criterion",
+ "derive_builder",
  "env_logger",
  "figment",
  "figment_file_provider_adapter",

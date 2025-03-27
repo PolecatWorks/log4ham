@@ -47,8 +47,8 @@ CREATE TABLE contacts (
 
 -- -- QSL card tracking
 CREATE TABLE qsl_cards (
-    id SERIAL PRIMARY KEY,
-    contact_id INTEGER REFERENCES contacts(id) ON DELETE RESTRICT,
+    id BIGSERIAL PRIMARY KEY,
+    contact_id BIGSERIAL REFERENCES contacts(id) ON DELETE RESTRICT,
     qsl_sent_date DATE,
     qsl_sent_via VARCHAR(20), -- e.g., 'direct', 'bureau', 'eQSL', 'LOTW'
     qsl_received_date DATE,
