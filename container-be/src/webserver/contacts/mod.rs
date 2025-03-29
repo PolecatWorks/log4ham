@@ -1,6 +1,6 @@
 mod handlers;
 mod qsl;
-mod routes;
+pub(crate) mod routes;
 mod stationsetup;
 
 use crate::{

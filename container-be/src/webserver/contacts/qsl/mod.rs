@@ -1,4 +1,5 @@
 mod handlers;
+mod routes;
 
 use chrono::NaiveDate;
 use derive_builder::Builder;
@@ -89,5 +90,38 @@ mod tests {
         assert_eq!(qsl_card.qsl_received_date, None);
         assert_eq!(qsl_card.qsl_received_via, None);
         assert_eq!(qsl_card.qsl_message, None);
+    }
+
+    /// Test the serialisation of QslCard using serde_json
+    #[test]
+    fn test_qsl_card_serialization_all_fields() {
+        let qsl_card = QslCardBuilder::default()
+            .id(Some(1))
+            .contact_id(1)
+            .qsl_sent_date(Some(NaiveDate::from_ymd_opt(2021, 1, 1).unwrap()))
+            .qsl_sent_via(Some("Bureau".to_string()))
+            .qsl_received_date(Some(NaiveDate::from_ymd_opt(2021, 1, 2).unwrap()))
+            .qsl_received_via(Some("Direct".to_string()))
+            .qsl_message(Some("Thanks for the QSL card!".to_string()))
+            .build()
+            .unwrap();
+
+        let serialized = serde_json::to_string(&qsl_card).unwrap();
+        println!("serialized: {}", serialized);
+        let deserialized: QslCard = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(qsl_card, deserialized);
+    }
+
+    /// Test the serialisation of QslCard using serde_json with minimal fields
+    #[test]
+    fn test_qsl_card_serialization_minimal() {
+        let qsl_card = QslCardBuilder::default().contact_id(1).build().unwrap();
+
+        let serialized = serde_json::to_string(&qsl_card).unwrap();
+        println!("serialized: {}", serialized);
+        let deserialized: QslCard = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(qsl_card, deserialized);
     }
 }

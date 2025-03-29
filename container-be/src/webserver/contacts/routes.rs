@@ -89,11 +89,7 @@ mod tests {
     async fn test_list_empty(pool: PgPool) {
         let api = contacts(pool);
 
-        let resp = warp::test::request()
-            .method("GET")
-            // .path("/contacts")
-            .reply(&api)
-            .await;
+        let resp = warp::test::request().method("GET").reply(&api).await;
 
         assert_eq!(resp.status(), 200);
         let list_ids: ListPages = serde_json::from_slice(resp.body()).unwrap();

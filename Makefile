@@ -95,6 +95,10 @@ pg-test-container:
 	@kubectl delete pod pg-test-pod || true
 	@kubectl run -it --rm pg-test-pod --image=postgres:17.4 --env="POSTGRES_USER=${PG_USER}" --env="POSTGRES_PASSWORD=${PGPASSWORD}" --env="POSTGRES_DB=${PG_NAME}" --port=5432
 
+pg-docker-test-container:
+	@docker rm -f pg-test-container || true
+	@docker run -it --rm --name pg-test-container -e POSTGRES_USER=${PG_USER} -e POSTGRES_PASSWORD=${PGPASSWORD} -e POSTGRES_DB=${PG_NAME} -p 5432:5432 postgres:17.4
+
 pg-test-forward:
 	kubectl port-forward pod/pg-test-pod 5432:5432
 
