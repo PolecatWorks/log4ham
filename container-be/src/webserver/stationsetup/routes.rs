@@ -151,7 +151,7 @@ pub fn station_setup(
 mod tests {
     use sqlx::types::Decimal;
 
-    use crate::webserver::{contacts::stationsetup::StationSetupBuilder, handle_rejection};
+    use crate::webserver::{stationsetup::StationSetupBuilder, handle_rejection};
 
     use super::*;
     use crate::webserver::test::create_contact;

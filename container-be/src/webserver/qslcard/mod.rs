@@ -1,5 +1,5 @@
 mod handlers;
-mod routes;
+pub(crate) mod routes;
 
 use chrono::NaiveDate;
 use derive_builder::Builder;

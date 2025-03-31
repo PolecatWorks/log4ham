@@ -1,6 +1,8 @@
 pub mod contacts;
 pub mod logs;
 pub mod users;
+mod stationsetup;
+mod qslcard;
 
 use figment::{
     providers::{Format, Yaml},
@@ -8,9 +10,9 @@ use figment::{
 };
 use figment_file_provider_adapter::FileAdapter;
 use log::info;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::json;
-use sqlx::{Pool, Postgres};
+use sqlx::{types::Decimal, Pool, Postgres};
 use std::{
     convert::Infallible,
     net::SocketAddr,
@@ -41,6 +43,24 @@ type DbBigSerial = i64;
 pub struct DbId {
     id: DbBigSerial,
 }
+
+pub struct SerializeDecimal;
+impl serde_with::SerializeAs<Decimal> for SerializeDecimal {
+    fn serialize_as<S: Serializer>(source: &Decimal, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&source.to_string())
+    }
+}
+
+impl<'de> serde_with::DeserializeAs<'de, Decimal> for SerializeDecimal {
+    fn deserialize_as<D>(deserializer: D) -> Result<Decimal, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Decimal::from_str_exact(&s).map_err(serde::de::Error::custom)
+    }
+}
+
 
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -189,6 +209,8 @@ async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: Cancellation
         .and(users::users(pool_pg.clone()))
         .or(warp::path("logs").and(logs::logs(pool_pg.clone())))
         .or(warp::path("contacts").and(contacts::routes::contacts(pool_pg.clone())))
+        .or(warp::path("stationsetups").and(stationsetup::routes::station_setup(pool_pg.clone())))
+        .or(warp::path("qsls").and(qslcard::routes::qsl(pool_pg.clone())))
         .recover(handle_rejection)
         .with(weblog);
 

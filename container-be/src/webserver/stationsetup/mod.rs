@@ -1,4 +1,4 @@
-use crate::webserver::contacts::SerializeDecimal;
+use crate::webserver::SerializeDecimal;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -7,7 +7,7 @@ use sqlx::{types::Decimal, Arguments, Postgres};
 use crate::webserver::DbBigSerial;
 
 mod handlers;
-mod routes;
+pub(crate) mod routes;
 
 /// A station setup is a configuration of equipment used for amateur radio operations.
 /// This struct represents a station setup in the database.

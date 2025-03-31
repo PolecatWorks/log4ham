@@ -1,7 +1,5 @@
 pub mod handlers;
-mod qsl;
 pub(crate) mod routes;
-mod stationsetup;
 
 use crate::{
     error::MyError,
@@ -13,6 +11,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
 use sqlx::types::Decimal;
 use sqlx::{types::chrono, Arguments, PgPool, Postgres};
+use crate::webserver::SerializeDecimal;
+
 
 #[derive(sqlx::Type, Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub(crate) enum Band {
@@ -48,22 +48,6 @@ pub(crate) enum Mode {
     Other,
 }
 
-struct SerializeDecimal;
-impl serde_with::SerializeAs<Decimal> for SerializeDecimal {
-    fn serialize_as<S: Serializer>(source: &Decimal, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&source.to_string())
-    }
-}
-
-impl<'de> serde_with::DeserializeAs<'de, Decimal> for SerializeDecimal {
-    fn deserialize_as<D>(deserializer: D) -> Result<Decimal, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Decimal::from_str_exact(&s).map_err(serde::de::Error::custom)
-    }
-}
 
 // Define structs to represent our database tables
 #[serde_with::serde_as]
@@ -71,7 +55,7 @@ impl<'de> serde_with::DeserializeAs<'de, Decimal> for SerializeDecimal {
 /// Represents a contact log entry.
 pub(crate) struct Contact {
     /// The unique identifier for the contact.
-    id: Option<DbBigSerial>,
+    pub id: Option<DbBigSerial>,
 
     /// The unique identifier for the user.
     user_id: DbBigSerial,

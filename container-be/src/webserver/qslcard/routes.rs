@@ -66,7 +66,7 @@ pub fn delete(
 }
 
 /// REST definiton of QslCard
-pub fn qslCards(
+pub fn qsl(
     pool_pg: PgPool,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     list(pool_pg.clone())
@@ -83,8 +83,7 @@ mod tests {
     use sqlx::types::Decimal;
 
     use crate::webserver::{
-        contacts::{self, qsl::QslCardBuilder, Band, Contact, Mode},
-        handle_rejection, users, ListPages,
+        contacts::{self, Band, Contact, Mode}, handle_rejection, qslcard::QslCardBuilder, users, ListPages
     };
 
     use super::*;
@@ -128,7 +127,7 @@ mod tests {
     /// Test GET on contacts returns empty list
     #[sqlx::test]
     async fn test_list_empty(pool: PgPool) {
-        let api = qslCards(pool);
+        let api = qsl(pool);
 
         let resp = warp::test::request().method("GET").reply(&api).await;
 
@@ -142,7 +141,7 @@ mod tests {
     async fn test_create_list_delete(pool: PgPool) {
         let contact = create_contact(pool.clone()).await;
 
-        let api = qslCards(pool.clone());
+        let api = qsl(pool.clone());
 
         let qsl_card = QslCardBuilder::default()
             .contact_id(contact.id.unwrap())
@@ -210,7 +209,7 @@ mod tests {
     /// read a Qsl Card that does not exist and get a 404
     #[sqlx::test]
     async fn test_read_not_found(pool: PgPool) {
-        let api = qslCards(pool.clone()).recover(handle_rejection);
+        let api = qsl(pool.clone()).recover(handle_rejection);
 
         let resp = warp::test::request()
             .method("GET")
@@ -229,7 +228,7 @@ mod tests {
     /// Delete a QslCard that does not exist and get a 404
     #[sqlx::test]
     async fn test_delete_not_found(pool: PgPool) {
-        let api = qslCards(pool.clone()).recover(handle_rejection);
+        let api = qsl(pool.clone()).recover(handle_rejection);
 
         let resp = warp::test::request()
             .method("DELETE")
@@ -248,7 +247,7 @@ mod tests {
     /// Update a QslCard that does not exist and get a 404
     #[sqlx::test]
     async fn test_update_not_found(pool: PgPool) {
-        let api = qslCards(pool.clone()).recover(handle_rejection);
+        let api = qsl(pool.clone()).recover(handle_rejection);
 
         let qsl_card = QslCardBuilder::default()
             .id(Some(9999))
