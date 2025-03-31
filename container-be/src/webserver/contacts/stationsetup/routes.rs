@@ -25,10 +25,10 @@ pub fn list(
             let options = PageOptions::defaulting(options);
 
             let ids = sqlx::query_as::<_, DbId>(
-                "SELECT id FROM station_setup WHERE id > $1 ORDER BY id LIMIT $2",
+                "SELECT id FROM station_setup ORDER BY id LIMIT $1 OFFSET $2",
             )
-            .bind(options.page.unwrap())
             .bind(options.size.unwrap())
+            .bind(options.page.unwrap() * options.size.unwrap())
             .fetch_all(&pool_pg)
             .await
             .map_err(MyError::from)?;
@@ -315,7 +315,7 @@ mod tests {
         assert_eq!(body.pagination.page, Some(0));
 
         // Iterate over the pages
-        for page in 2..=5 {
+        for page in 2..=4 {
             let response = warp::test::request()
                 .method("GET")
                 .path(&format!("/?page={}&size=2", page))
@@ -324,9 +324,19 @@ mod tests {
 
             assert_eq!(response.status(), 200, "Response: {:?}", response);
             let body: ListPages = serde_json::from_slice(response.body()).unwrap();
-            assert_eq!(body.ids.len(), 2);
+            assert_eq!(body.ids.len(), 2, "Response: {:?}", response);
             assert_eq!(body.pagination.size, Some(2));
             assert_eq!(body.pagination.page, Some(page));
         }
+
+        // Check the last page
+        let response = warp::test::request()
+            .method("GET")
+            .path("/?page=5&size=2")
+            .reply(&api)
+            .await;
+        assert_eq!(response.status(), 200, "Response: {:?}", response);
+        let body: ListPages = serde_json::from_slice(response.body()).unwrap();
+        assert_eq!(body.ids.len(), 0, "Response: {:?}", response);
     }
 }
