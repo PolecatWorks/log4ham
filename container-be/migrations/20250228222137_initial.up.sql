@@ -58,8 +58,8 @@ CREATE TABLE qsl_cards (
 
 -- -- Station equipment used
 CREATE TABLE station_setup (
-    id SERIAL PRIMARY KEY,
-    contact_id INTEGER REFERENCES contacts(id) ON DELETE RESTRICT,
+    id BIGSERIAL PRIMARY KEY,
+    contact_id BIGSERIAL REFERENCES contacts(id) ON DELETE RESTRICT,
     radio_model VARCHAR(100),
     antenna_type VARCHAR(100),
     power_output NUMERIC(6, 1),  -- in watts

@@ -297,6 +297,54 @@ mod tests {
     }
 }
 
+#[cfg(test)]
+mod test {
+    use sqlx::{types::Decimal, PgPool};
+
+    use crate::webserver::{
+        contacts::{self, Band, Mode},
+        users,
+    };
+
+    use super::contacts::Contact;
+
+    pub async fn create_contact(pool: PgPool) -> Contact {
+        let user =
+            users::handlers::create(users::User::new("test", "user", "password"), pool.clone())
+                .await
+                .unwrap();
+
+        println!("user = {:?}", user);
+
+        contacts::handlers::create(
+            pool.clone(),
+            Contact::new(
+                None,
+                user.id.unwrap(),
+                chrono::NaiveDate::parse_from_str("2023-01-01", "%Y-%m-%d").unwrap(),
+                chrono::NaiveTime::parse_from_str("12:00", "%H:%M").unwrap(),
+                "CALLSIGN".to_string(),
+                "MI7IEU".to_string(),
+                Band::B20m,
+                Some(Decimal::new(202, 2)),
+                Mode::Ssb,
+                Some("59".to_string()),
+                Some("59".to_string()),
+                Some("NAME".to_string()),
+                Some("QTH".to_string()),
+                Some("GRID".to_string()),
+                Some("COUNTRY".to_string()),
+                Some("STATE".to_string()),
+                Some("COUNTY".to_string()),
+                Some("NOTES".to_string()),
+                true,
+            ),
+        )
+        .await
+        .unwrap()
+    }
+}
+
 // #[cfg(test)]
 // mod test {
 //     use sqlx::{PgPool, Row};

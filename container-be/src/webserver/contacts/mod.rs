@@ -1,4 +1,4 @@
-mod handlers;
+pub mod handlers;
 mod qsl;
 pub(crate) mod routes;
 mod stationsetup;
