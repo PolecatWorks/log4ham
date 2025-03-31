@@ -275,4 +275,58 @@ mod tests {
             .await;
         assert_eq!(response.status(), 404, "Response: {:?}", response);
     }
+
+    /// Add 10 records to the DB then list with a page size of 2 and iterate over the pages
+    #[sqlx::test]
+    async fn test_list_with_records(pool: PgPool) {
+        let api = station_setup(pool.clone());
+
+        let contact = create_contact(pool.clone()).await;
+
+        for i in 1..=10 {
+            let station_setup = StationSetupBuilder::default()
+                .contact_id(contact.id.unwrap())
+                .radio_model(Some(format!("Radio Model {}", i)))
+                .antenna_type(Some(format!("Antenna Type {}", i)))
+                .power_output(Some(Decimal::new(i * 10, 0)))
+                .other_equipment(Some(format!("Other Equipment {}", i)))
+                .build()
+                .unwrap();
+
+            let response = warp::test::request()
+                .method("POST")
+                .json(&station_setup)
+                .reply(&api)
+                .await;
+
+            assert_eq!(response.status(), 200, "Response: {:?}", response);
+        }
+
+        let response = warp::test::request()
+            .method("GET")
+            .path("/?size=2")
+            .reply(&api)
+            .await;
+
+        assert_eq!(response.status(), 200, "Response: {:?}", response);
+        let body: ListPages = serde_json::from_slice(response.body()).unwrap();
+        assert_eq!(body.ids.len(), 2);
+        assert_eq!(body.pagination.size, Some(2));
+        assert_eq!(body.pagination.page, Some(0));
+
+        // Iterate over the pages
+        for page in 2..=5 {
+            let response = warp::test::request()
+                .method("GET")
+                .path(&format!("/?page={}&size=2", page))
+                .reply(&api)
+                .await;
+
+            assert_eq!(response.status(), 200, "Response: {:?}", response);
+            let body: ListPages = serde_json::from_slice(response.body()).unwrap();
+            assert_eq!(body.ids.len(), 2);
+            assert_eq!(body.pagination.size, Some(2));
+            assert_eq!(body.pagination.page, Some(page));
+        }
+    }
 }
