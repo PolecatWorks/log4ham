@@ -18,7 +18,7 @@ CREATE TABLE logs (
 
 -- Create enum types for common fields
 CREATE TYPE band AS ENUM ('B160m', 'B80m', 'B60m', 'B40m', 'B30m', 'B20m', 'B17m', 'B15m', 'B12m', 'B10m', 'B6m', 'B2m', 'B70cm', 'B23cm', 'Other');
-CREATE TYPE mode AS ENUM ('Ssb', 'AM', 'FM', 'Cw', 'RTTY', 'PSK31', 'FT8', 'FT4', 'JS8', 'SSTV', 'EME', 'SATELLITE', 'Other');
+CREATE TYPE mode AS ENUM ('Ssb', 'Am', 'FM', 'Cw', 'RTTY', 'PSK31', 'FT8', 'FT4', 'JS8', 'SSTV', 'EME', 'SATELLITE', 'Other');
 
 -- Main contacts table
 CREATE TABLE contacts (
@@ -29,7 +29,7 @@ CREATE TABLE contacts (
     callsign VARCHAR(10) NOT NULL,
     operator_callsign VARCHAR(10) NOT NULL,
     band band NOT NULL,
-    frequency NUMERIC(10, 3),  -- in MHz with 3 decimal precision
+    frequency NUMERIC(10, 3) NOT NULL,  -- in MHz with 3 decimal precision
     mode mode NOT NULL,
     rst_sent VARCHAR(3),  -- RST report sent
     rst_received VARCHAR(3),  -- RST report received

@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { catchError, forkJoin, map, Observable, Subject, switchMap, throwError } from "rxjs";
 import { ListPages, PageOptions } from "./pagination";
+import { Contact } from "./contact";
 
 export function asHttpParams<T>(options: PageOptions<T>): HttpParams {
 
@@ -72,5 +73,17 @@ export class RestGeneric<T> {
     );
   }
 
+  create(record: T) {
+    console.log('Creating: ', record);
+    return this.http.post<T>(this.url, record);
+  }
+
+  update(record: Contact) {
+    return this.http.post<T>(this.url + '/' + record.id, record);
+  }
+
+  delete(id: number) {
+    return this.http.delete<T>(this.url + '/' + id);
+  }
 
 }

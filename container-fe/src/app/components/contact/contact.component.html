@@ -1,0 +1,74 @@
+<div>
+    <form (submit)="submit()">
+      <mat-form-field>
+          <mat-label>User Id</mat-label>
+          <input type="number" matInput required [(ngModel)]="record.user_id" name="user_id" />
+          </mat-form-field>
+      <mat-form-field>
+      <mat-label>QSO Date</mat-label>
+        <input type="date" matInput required [(ngModel)]="record.qso_date" name="qso_date" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>QSO Time</mat-label>
+        <input type="time" matInput required [(ngModel)]="record.qso_time" name="qso_time" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Callsign</mat-label>
+        <input matInput required [(ngModel)]="record.callsign" name="callsign" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Operator Callsign</mat-label>
+        <input matInput required [(ngModel)]="record.operator_callsign" name="operator_callsign" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Band</mat-label>
+        <select matNativeControl required [(ngModel)]="record.band" name="band">
+            <option value="B160m">160m</option>
+            <option value="B80m">80m</option>
+            <option value="B40m">40m</option>
+            <option value="B30m">30m</option>
+            <option value="B20m">20m</option>
+            <option value="B17m">17m</option>
+            <option value="B15m">15m</option>
+            <option value="B12m">12m</option>
+            <option value="B10m">10m</option>
+            <option value="B6m">2m</option>
+            <option value="B2m">2m</option>
+            <option value="B70cm">70cm</option>
+            <option value="B23cm">23cm</option>
+            <option value="Other">Other</option>
+        </select>
+        <!-- <input matInput required [(ngModel)]="record.band" name="band" /> -->
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Frequency</mat-label>
+        <input type="float" matInput required [(ngModel)]="record.frequency" name="frequency" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Mode</mat-label>
+        <select matNativeControl required [(ngModel)]="record.mode" name="mode">
+            <option value="Ssb">SSB</option>
+            <option value="Am">AM</option>
+            <option value="Fm">FM</option>
+            <option value="Cw">CW</option>
+            <option value="Rtty">RTTY</option>
+            <option value="Psk31">PSK31</option>
+            <option value="Ft8">FT8</option>
+            <option value="Ft4">FT4</option>
+            <option value="Js8">JS8</option>
+            <option value="Sstv">SSTV</option>
+            <option value="Eme">EME</option>
+            <option value="Satellite">SATELLITE</option>
+            <option value="Other">Other</option>
+        </select>
+      </mat-form-field>
+
+      <mat-slide-toggle [(ngModel)]="record.is_confirmed" name="is_confirmed">Confirmed</mat-slide-toggle>
+
+
+
+      <button mat-raised-button>Submit</button>
+      <button (click)="cancel()" mat-raised-button type="button">Cancel</button>
+    </form>
+  </div>

@@ -12,78 +12,13 @@ import { Contact } from './contact';
 })
 export class Log4HamService {
 
-  contactMe: RestGeneric<Contact>;
+  contact: RestGeneric<Contact>;
 
   constructor(private http: HttpClient) {
-    this.contactMe = new RestGeneric(this.http, this.prefix + '/contacts', 'Contact');
+    this.contact = new RestGeneric(this.http, this.prefix + '/contacts', 'Contact');
   }
 
   private prefix = '/log4ham';
-
-
-
-
-
-  private contactsSource = new Subject<number>();
-  contactsSourceUpdate() {
-    return this.contactsSource.asObservable();
-  }
-  contactsSourceRefresh(now: number) {
-    this.contactsSource.next(now);
-  }
-
-
-  contactsGetPagedIds(query: PageOptions<Contact>) {
-    const params = asHttpParams(query);
-
-    return this.http.get<ListPages<number, Contact>>(this.prefix + '/contacts', { params: params }).pipe(
-      catchError(error => {
-        console.error('Error:', error);
-        return throwError(() => new Error('Could not process request: ' + error.message + ' (Status code: ' + error.status + ')'));
-      })
-    );
-  }
-
-  contactsGet(id: number) {
-    return this.http.get<Contact>(this.prefix + '/contacts/' + id).pipe(
-      catchError(error => {
-        console.error('Error:', error);
-        return throwError(() => new Error('Could not process request: ' + error.message + ' (Status code: ' + error.status + ')'));
-      })
-    );
-  }
-
-  contactsGetPagedDetail(query: PageOptions<Contact>): Observable<ListPages<Contact, Contact>> {
-    return this.usersGetPagedIds(query).pipe(
-      switchMap(idsPage => {
-        const detailRequests = idsPage.ids.map(id => this.contactsGet(Number(id)));
-        return forkJoin(detailRequests).pipe(
-          map(details => ({
-            ids: details,
-            pagination: idsPage.pagination,
-          }))
-        );
-      })
-    );
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

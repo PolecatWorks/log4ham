@@ -7,6 +7,7 @@ import { LogsComponent } from './components/logs/logs.component';
 import { UserComponent } from './components/user/user.component';
 import { LogComponent } from './components/log/log.component';
 import { ContactsComponent } from './components/contacts/contacts.component';
+import { ContactComponent } from './components/contact/contact.component';
 
 export const routes: Routes = [
   {
@@ -44,7 +45,10 @@ export const routes: Routes = [
       {
         path: 'contacts',
         component: ContactsComponent,
-        // children: [{ path: ':id', component: LogComponent }],
+        children: [
+          { path: 'new', component: ContactComponent },
+          { path: ':id', component: ContactComponent },
+        ],
       },
     ],
   },
