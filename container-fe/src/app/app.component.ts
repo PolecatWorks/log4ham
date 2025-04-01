@@ -8,12 +8,10 @@ import { filter } from 'rxjs/operators';
   selector: 'app-root',
   imports: [RouterOutlet],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrl: './app.component.scss',
 })
 export class AppComponent {
   title = 'shell';
-
-
 
   constructor(private oauthService: OAuthService) {
     this.oauthService.configure(authCodeFlowConfig);
@@ -22,8 +20,6 @@ export class AppComponent {
     //this.oauthService.setupAutomaticSilentRefresh();
 
     // Automatically load user profile
-    this.oauthService.events
-      .pipe(filter((e) => e.type === 'token_received'))
-      .subscribe((_) => this.oauthService.loadUserProfile());
+    this.oauthService.events.pipe(filter(e => e.type === 'token_received')).subscribe(_ => this.oauthService.loadUserProfile());
   }
 }

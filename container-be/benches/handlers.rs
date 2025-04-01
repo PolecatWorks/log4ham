@@ -7,7 +7,7 @@ use log4ham::{
     },
     webserver::{
         lists::{self, List},
-        ListOptions,
+        PageOptions,
     },
     UrlWithUsernamePassword,
 };
@@ -43,9 +43,9 @@ pub fn bench_list_handlers(c: &mut Criterion) {
 
     let db_state = client_rt.block_on(async { PersistenceState::new(db_config).await.unwrap() });
 
-    let options = ListOptions {
-        offset: None,
-        limit: None,
+    let options = PageOptions {
+        sort: None,
+        size: None,
     };
 
     let mut group = c.benchmark_group("Handlers");

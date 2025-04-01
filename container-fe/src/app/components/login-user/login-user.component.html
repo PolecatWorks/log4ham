@@ -1,0 +1,21 @@
+<p>user works!</p>
+
+<h2>User</h2>
+<p>{{ userName }}</p>
+
+<h2>Id-Token</h2>
+<p>{{ idToken }}</p>
+
+<h2>Access Token</h2>
+<p>{{ accessToken }}</p>
+
+<h2>Resource</h2>
+<p>{{ resource_access | json }}</p>
+
+<p>
+  <button (click)="refresh()">Refresh</button>
+</p>
+
+<p>
+  <button (click)="logout()">Logout</button>
+</p>

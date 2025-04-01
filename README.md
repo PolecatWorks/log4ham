@@ -8,6 +8,18 @@ Create an abaility to log Amateur Radio calls
 
 | Date | Start Time | End Time | Frequency (Hz) | Mode | Power (dBW) | Station (called/worked) |
 
+# Development usage
+
+Create a DB test container (blank DB)
+Then create the schema in it
+
+    make pg-test-container
+    make pg-test-forward
+    make pg-schema-run
+    make watch-run
+    make watch-serve
+
+
 # Pull Secrets with GHCR
 
 Follow this guide: https://dev.to/asizikov/using-github-container-registry-with-kubernetes-38fb
@@ -22,4 +34,5 @@ Pull your DB to local to test
 # ToDo
 
 * [ ] Swap nginx image to alpine version to reduce size
-* [ ]
+* [x] Reload users when we navigate back from updating or creating a new user
+* [ ] Build out some UI elements for contacts

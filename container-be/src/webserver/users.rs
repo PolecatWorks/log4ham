@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use warp::Filter;
 
-use super::{with_db_pool_pg, DbBigSerial, ListOptions};
+use super::{with_db_pool_pg, DbBigSerial, PageOptions};
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow, PartialEq, Clone)]
 pub struct User {
@@ -47,7 +47,7 @@ pub fn users_list(
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path::end()
         .and(warp::get())
-        .and(warp::query::<ListOptions>())
+        .and(warp::query::<PageOptions>())
         .and(with_db_pool_pg(pool_pg))
         .and_then(handlers::list)
 }
@@ -59,6 +59,7 @@ pub fn users_create(
         // .and(warp::path::end())
         .and(warp::post())
         .and(warp::body::json())
+        .and(warp::body::content_length_limit(1024 * 32))
         .and(with_db_pool_pg(pool_pg))
         .and_then(handlers::create)
 }
@@ -78,6 +79,7 @@ pub fn users_update(
     warp::path!(DbBigSerial)
         .and(warp::put())
         .and(warp::body::json())
+        .and(warp::body::content_length_limit(1024 * 32))
         .and(with_db_pool_pg(pool_pg))
         .and_then(handlers::update)
 }
@@ -103,24 +105,26 @@ pub fn users(
 
 pub mod handlers {
     use super::*;
-    use crate::{error::MyError, webserver::ListIds};
+    use crate::{error::MyError, webserver::ListPages};
     use sqlx::PgPool;
 
-    pub async fn list(options: ListOptions, pool_pg: PgPool) -> Result<ListIds, warp::Rejection> {
+    pub async fn list(options: PageOptions, pool_pg: PgPool) -> Result<ListPages, warp::Rejection> {
+        let options = PageOptions::defaulting(options);
+
         let ids = sqlx::query_as::<_, User>(
             r#"
             SELECT * FROM users
             LIMIT $1 OFFSET $2
             "#,
         )
-        .bind(options.limit)
-        .bind(options.offset)
+        .bind(options.size)
+        .bind(options.sort)
         .fetch_all(&pool_pg)
         .await
         .map_err(MyError::from)?;
 
-        let list_ids = ListIds {
-            options,
+        let list_ids = ListPages {
+            pagination: options,
             ids: ids.iter().map(|u| u.id.unwrap()).collect(),
         };
 
@@ -219,7 +223,7 @@ pub mod handlers {
 
 #[cfg(test)]
 mod tests {
-    use crate::webserver::ListIds;
+    use crate::webserver::ListPages;
 
     use super::*;
 
@@ -258,7 +262,7 @@ mod tests {
             .await;
 
         assert_eq!(resp.status(), StatusCode::OK);
-        let list_ids: ListIds = serde_json::from_slice(resp.body()).unwrap();
+        let list_ids: ListPages = serde_json::from_slice(resp.body()).unwrap();
         assert_eq!(list_ids.ids.len(), 0);
 
         Ok(())
@@ -330,7 +334,7 @@ mod tests {
             .await;
 
         assert_eq!(resp.status(), StatusCode::OK);
-        let list_ids: ListIds = serde_json::from_slice(resp.body()).unwrap();
+        let list_ids: ListPages = serde_json::from_slice(resp.body()).unwrap();
         assert_eq!(list_ids.ids.len(), 1);
 
         assert_eq!(list_ids.ids[0], new_user.id.unwrap());
@@ -456,7 +460,7 @@ mod tests {
             .await;
 
         assert_eq!(resp_list.status(), StatusCode::OK);
-        let list_ids: ListIds = serde_json::from_slice(resp_list.body()).unwrap();
+        let list_ids: ListPages = serde_json::from_slice(resp_list.body()).unwrap();
         assert_eq!(list_ids.ids.len(), 0);
 
         Ok(())

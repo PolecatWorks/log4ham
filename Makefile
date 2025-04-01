@@ -92,7 +92,13 @@ pg-schema-revert:
 	@cd container-be && sqlx migrate revert --database-url postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
 
 pg-test-container:
+	@kubectl delete pod pg-test-pod || true
 	@kubectl run -it --rm pg-test-pod --image=postgres:17.4 --env="POSTGRES_USER=${PG_USER}" --env="POSTGRES_PASSWORD=${PGPASSWORD}" --env="POSTGRES_DB=${PG_NAME}" --port=5432
+
+pg-docker-test-container:
+	@docker rm -f pg-test-container || true
+	@docker run -it --rm --name pg-test-container -e POSTGRES_USER=${PG_USER} -e POSTGRES_PASSWORD=${PGPASSWORD} -e POSTGRES_DB=${PG_NAME} -p 5432:5432 postgres:17.4
+
 pg-test-forward:
 	kubectl port-forward pod/pg-test-pod 5432:5432
 
@@ -108,10 +114,14 @@ watch-config-check:
 	cd ${BE_DIR} && cargo watch -x "run -- config-check --config test-data/config-localhost.yaml --secrets test-data/secrets"
 
 watch-test:
-	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch --ignore test_data -x "test -- --nocapture"
+	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch --ignore test_data -x "test stationsetup"
+#  --nocapture
 
 watch-run:
 	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch -x "run -- start --config test-data/config-localhost.yaml --secrets test-data/secrets"
+
+watch-serve:
+	cd ${FE_DIR} && ng serve
 
 
 # Run the container

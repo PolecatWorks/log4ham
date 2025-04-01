@@ -1,5 +1,8 @@
+pub mod contacts;
 pub mod logs;
 pub mod users;
+mod stationsetup;
+mod qslcard;
 
 use figment::{
     providers::{Format, Yaml},
@@ -7,9 +10,9 @@ use figment::{
 };
 use figment_file_provider_adapter::FileAdapter;
 use log::info;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::json;
-use sqlx::{Pool, Postgres};
+use sqlx::{types::Decimal, Pool, Postgres};
 use std::{
     convert::Infallible,
     net::SocketAddr,
@@ -41,51 +44,88 @@ pub struct DbId {
     id: DbBigSerial,
 }
 
+pub struct SerializeDecimal;
+impl serde_with::SerializeAs<Decimal> for SerializeDecimal {
+    fn serialize_as<S: Serializer>(source: &Decimal, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&source.to_string())
+    }
+}
+
+impl<'de> serde_with::DeserializeAs<'de, Decimal> for SerializeDecimal {
+    fn deserialize_as<D>(deserializer: D) -> Result<Decimal, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Decimal::from_str_exact(&s).map_err(serde::de::Error::custom)
+    }
+}
+
+
+#[derive(Serialize)]
+#[serde(rename_all = "lowercase")]
+enum SortOrder {
+    Asc,
+    Desc,
+}
+
+pub struct PageSort {
+    property: String,
+    direction: SortOrder,
+}
+
 // The query parameters for list_todos.
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ListOptions {
-    pub offset: Option<DbBigSerial>,
-    pub limit: Option<DbBigSerial>,
+pub struct PageOptions {
+    pub page: Option<DbBigSerial>,
+    pub size: Option<DbBigSerial>,
+    #[serde(flatten)]
+    pub sort: Option<DbBigSerial>,
 }
 
-impl Default for ListOptions {
+impl Default for PageOptions {
     fn default() -> Self {
         Self {
-            offset: Some(0),
-            limit: Some(30),
+            size: Some(5),
+            page: Some(0),
+            sort: None,
         }
     }
 }
 
-impl ListOptions {
-    pub fn defaulting(inval: ListOptions) -> ListOptions {
-        ListOptions {
-            offset: if inval.offset.is_some() {
-                inval.offset
+impl PageOptions {
+    pub fn defaulting(inval: PageOptions) -> PageOptions {
+        PageOptions {
+            size: if inval.size.is_some() {
+                inval.size
             } else {
-                ListOptions::default().offset
+                PageOptions::default().size
             },
-            limit: if inval.limit.is_some() {
-                inval.limit
+            page: if inval.page.is_some() {
+                inval.page
             } else {
-                ListOptions::default().limit
+                PageOptions::default().page
+            },
+            sort: if inval.sort.is_some() {
+                inval.sort
+            } else {
+                PageOptions::default().sort
             },
         }
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct ListIds {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ListPages {
     ids: Vec<DbBigSerial>,
-    options: ListOptions,
+    pagination: PageOptions,
 }
 
-impl warp::Reply for ListIds {
+impl warp::Reply for ListPages {
     fn into_response(self) -> warp::reply::Response {
         warp::reply::json(&self).into_response()
     }
 }
-
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebServiceConfig {
@@ -168,6 +208,9 @@ async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: Cancellation
     let combined = warp::path("users")
         .and(users::users(pool_pg.clone()))
         .or(warp::path("logs").and(logs::logs(pool_pg.clone())))
+        .or(warp::path("contacts").and(contacts::routes::contacts(pool_pg.clone())))
+        .or(warp::path("stationsetups").and(stationsetup::routes::station_setup(pool_pg.clone())))
+        .or(warp::path("qsls").and(qslcard::routes::qsl(pool_pg.clone())))
         .recover(handle_rejection)
         .with(weblog);
 
@@ -273,6 +316,54 @@ mod tests {
         assert_eq!(foo.get::<i32, _>(0), 1);
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use sqlx::{types::Decimal, PgPool};
+
+    use crate::webserver::{
+        contacts::{self, Band, Mode},
+        users,
+    };
+
+    use super::contacts::Contact;
+
+    pub async fn create_contact(pool: PgPool) -> Contact {
+        let user =
+            users::handlers::create(users::User::new("test", "user", "password"), pool.clone())
+                .await
+                .unwrap();
+
+        println!("user = {:?}", user);
+
+        contacts::handlers::create(
+            pool.clone(),
+            Contact::new(
+                None,
+                user.id.unwrap(),
+                chrono::NaiveDate::parse_from_str("2023-01-01", "%Y-%m-%d").unwrap(),
+                chrono::NaiveTime::parse_from_str("12:00", "%H:%M").unwrap(),
+                "CALLSIGN".to_string(),
+                "MI7IEU".to_string(),
+                Band::B20m,
+                Some(Decimal::new(202, 2)),
+                Mode::Ssb,
+                Some("59".to_string()),
+                Some("59".to_string()),
+                Some("NAME".to_string()),
+                Some("QTH".to_string()),
+                Some("GRID".to_string()),
+                Some("COUNTRY".to_string()),
+                Some("STATE".to_string()),
+                Some("COUNTY".to_string()),
+                Some("NOTES".to_string()),
+                true,
+            ),
+        )
+        .await
+        .unwrap()
     }
 }
 

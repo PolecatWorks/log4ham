@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use warp::Filter;
+mod handlers;
 
-use super::{with_db_pool_pg, DbBigSerial, ListOptions};
+use super::{with_db_pool_pg, DbBigSerial, PageOptions};
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow, PartialEq, Clone)]
 pub struct Log {
@@ -41,7 +42,7 @@ pub fn logs_list(
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path::end()
         .and(warp::get())
-        .and(warp::query::<ListOptions>())
+        .and(warp::query::<PageOptions>())
         .and(with_db_pool_pg(pool_pg))
         .and_then(handlers::list)
 }
@@ -52,6 +53,7 @@ pub fn logs_create(
     warp::path::end()
         .and(warp::post())
         .and(warp::body::json())
+        .and(warp::body::content_length_limit(1024 * 32))
         .and(with_db_pool_pg(pool_pg))
         .and_then(handlers::create)
 }
@@ -73,6 +75,7 @@ pub fn logs_update(
         .and(warp::path::end())
         .and(warp::put())
         .and(warp::body::json())
+        .and(warp::body::content_length_limit(1024 * 32))
         .and(with_db_pool_pg(pool_pg))
         .and_then(handlers::update)
 }
@@ -97,94 +100,16 @@ pub fn logs(
         .or(logs_delete(pool_pg))
 }
 
-pub mod handlers {
-    use crate::{
-        error::MyError,
-        webserver::{DbBigSerial, ListIds, ListOptions},
-    };
-
-    use super::Log;
-    use sqlx::PgPool;
-
-    pub async fn list(options: ListOptions, pool_pg: PgPool) -> Result<ListIds, warp::Rejection> {
-        let ids = sqlx::query_as::<_, Log>("SELECT * FROM logs")
-            .fetch_all(&pool_pg)
-            .await
-            .map_err(MyError::from)?;
-
-        let list_ids = ListIds {
-            options,
-            ids: ids.iter().map(|u| u.id.unwrap()).collect(),
-        };
-
-        Ok(list_ids)
-    }
-    pub async fn create(new_log: Log, pool_pg: PgPool) -> Result<Log, warp::Rejection> {
-        let log = sqlx::query_as::<_, Log>(
-            "INSERT INTO logs (user_id, description) VALUES ($1, $2) RETURNING *",
-        )
-        .bind(new_log.user_id)
-        .bind(new_log.description)
-        .fetch_one(&pool_pg)
-        .await
-        .map_err(MyError::from)?;
-
-        Ok(log)
-    }
-
-    pub async fn read(id: DbBigSerial, pool_pg: PgPool) -> Result<Log, warp::Rejection> {
-        let log = sqlx::query_as::<_, Log>("SELECT * FROM logs WHERE id = $1")
-            .bind(id)
-            .fetch_one(&pool_pg)
-            .await
-            .map_err(MyError::from)?;
-
-        Ok(log)
-    }
-
-    pub async fn update(
-        id: DbBigSerial,
-        log: Log,
-        pool_pg: PgPool,
-    ) -> Result<Log, warp::Rejection> {
-        if log.id.is_none() || id != log.id.unwrap() {
-            return Err(MyError::Message("ids on path and body must match for update").into());
-        }
-
-        let log = sqlx::query_as::<_, Log>(
-            "UPDATE logs SET user_id = $2, description = $3 WHERE id = $1 RETURNING *",
-        )
-        .bind(id)
-        .bind(log.user_id)
-        .bind(log.description)
-        .fetch_one(&pool_pg)
-        .await
-        .map_err(MyError::from)?;
-
-        Ok(log)
-    }
-
-    pub async fn delete(id: DbBigSerial, pool_pg: PgPool) -> Result<Log, warp::Rejection> {
-        let log = sqlx::query_as::<_, Log>("DELETE FROM logs WHERE id = $1 RETURNING *")
-            .bind(id)
-            .fetch_one(&pool_pg)
-            .await
-            .map_err(MyError::from)?;
-
-        Ok(log)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::webserver::{handle_rejection, users, ListIds};
+    use crate::webserver::{handle_rejection, users, ListPages};
     use sqlx::PgPool;
     use warp::http::StatusCode;
 
     #[sqlx::test]
     async fn logs_handler_list_empty(pool: PgPool) -> sqlx::Result<()> {
-        let list_ids = handlers::list(ListOptions::default(), pool).await.unwrap();
+        let list_ids = handlers::list(PageOptions::default(), pool).await.unwrap();
 
         assert_eq!(list_ids.ids.len(), 0);
 
@@ -206,7 +131,7 @@ mod tests {
 
         assert!(log.content_eq(&new_log));
 
-        let list_ids = handlers::list(ListOptions::default(), pool.clone())
+        let list_ids = handlers::list(PageOptions::default(), pool.clone())
             .await
             .unwrap();
         assert_eq!(list_ids.ids.len(), 1);
@@ -269,7 +194,7 @@ mod tests {
 
         assert_eq!(resp.status(), StatusCode::OK);
 
-        let list_ids: ListIds = serde_json::from_slice(resp.body()).unwrap();
+        let list_ids: ListPages = serde_json::from_slice(resp.body()).unwrap();
 
         assert_eq!(list_ids.ids.len(), 0);
 
@@ -321,7 +246,7 @@ mod tests {
 
         assert_eq!(log_deleted0, log);
 
-        let list_ids = handlers::list(ListOptions::default(), pool.clone())
+        let list_ids = handlers::list(PageOptions::default(), pool.clone())
             .await
             .unwrap();
         assert_eq!(list_ids.ids.len(), 0);
@@ -351,7 +276,7 @@ mod tests {
             .await;
 
         assert_eq!(resp.status(), StatusCode::OK);
-        let list_ids: ListIds = serde_json::from_slice(resp.body()).unwrap();
+        let list_ids: ListPages = serde_json::from_slice(resp.body()).unwrap();
         assert_eq!(list_ids.ids.len(), 0);
 
         let resp = warp::test::request()
@@ -384,7 +309,7 @@ mod tests {
             .await;
 
         assert_eq!(resp.status(), StatusCode::OK);
-        let list_ids: ListIds = serde_json::from_slice(resp.body()).unwrap();
+        let list_ids: ListPages = serde_json::from_slice(resp.body()).unwrap();
         assert_eq!(list_ids.ids.len(), 1);
 
         // Read
@@ -444,7 +369,7 @@ mod tests {
             .await;
 
         assert_eq!(resp.status(), StatusCode::OK);
-        let list_ids: ListIds = serde_json::from_slice(resp.body()).unwrap();
+        let list_ids: ListPages = serde_json::from_slice(resp.body()).unwrap();
         assert_eq!(list_ids.ids.len(), 0);
 
         Ok(())

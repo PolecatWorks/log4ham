@@ -1,47 +1,77 @@
-import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { OAuthService } from 'angular-oauth2-oidc';
-import { jwtDecode } from 'jwt-decode';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Log4HamService } from '../../services/log4ham.service';
+import { of, switchMap } from 'rxjs';
+import { User } from '../../services/user';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { FormsModule } from '@angular/forms';
 
 @Component({
-  selector: 'app-user',
-  imports: [CommonModule],
+  standalone: true,
+  imports: [MatButtonModule, MatFormFieldModule, MatInputModule, FormsModule],
   templateUrl: './user.component.html',
-  styleUrl: './user.component.scss'
+  styleUrl: './user.component.scss',
 })
 export class UserComponent {
-  constructor(private oauthService: OAuthService) {}
+  user: User = {} as User;
 
-  get userName(): string {
-    const claims = this.oauthService.getIdentityClaims();
-    if (!claims) return "null";
-    return claims['given_name'];
+  constructor(
+    private activatedRoute: ActivatedRoute,
+    private log4hamService: Log4HamService,
+    private router: Router
+  ) {
+    this.activatedRoute.params
+      .pipe(
+        switchMap(param => {
+          if ('id' in param) {
+            return this.log4hamService.usersGet(param['id']);
+          } else {
+            console.log('id not provided so creating a new user');
+            return of({} as User);
+          }
+        })
+      )
+      .subscribe(params => {
+        this.user = params;
+      });
   }
 
-  get resource_access() {
-    const accessToken = this.oauthService.getAccessToken();
-    if (!accessToken) return null;
-
-    const decodedToken: any = jwtDecode(accessToken);
-    // console.log(decodedToken);
-    return decodedToken.resource_access || null;
+  private newRecord() {
+    return this.user.id === undefined;
   }
 
-  get idToken(): string {
-    this.oauthService
-    return this.oauthService.getIdToken();
-  }
+  submit() {
+    if (this.newRecord()) {
+      this.log4hamService.usersCreate(this.user).subscribe({
+        next: data => {
+          console.log('Created: ', data);
 
-  get accessToken(): string {
-    return this.oauthService.getAccessToken();
-  }
+          this.router.navigate(['..'], { relativeTo: this.activatedRoute });
+        },
+        error: error => {
+          console.error('Error:', error);
+        },
+      });
+    } else {
+      this.log4hamService.usersUpdate(this.user).subscribe({
+        next: data => {
+          console.log('updated: ', data);
 
-  refresh() {
-    this.oauthService.refreshToken();
+          this.router.navigate(['../..'], { relativeTo: this.activatedRoute });
+        },
+        error: error => {
+          console.error('Error:', error);
+        },
+      });
+    }
   }
-
-  logout() {
-    this.oauthService.logOut();
+  cancel() {
+    if (this.newRecord()) {
+      this.router.navigate(['..'], { relativeTo: this.activatedRoute });
+    } else {
+      this.router.navigate(['../..'], { relativeTo: this.activatedRoute });
+    }
   }
-
 }

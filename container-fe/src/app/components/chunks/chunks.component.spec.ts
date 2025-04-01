@@ -8,9 +8,8 @@ describe('ChunksComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ChunksComponent]
-    })
-    .compileComponents();
+      imports: [ChunksComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ChunksComponent);
     component = fixture.componentInstance;

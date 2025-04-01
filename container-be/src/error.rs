@@ -6,7 +6,6 @@ use std::io;
 
 use thiserror::Error;
 
-
 /// Error type for handling errors on Sample
 #[derive(Error, Debug)]
 pub enum MyError {
