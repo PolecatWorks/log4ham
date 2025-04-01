@@ -6,6 +6,7 @@ import { UsersComponent } from './components/users/users.component';
 import { LogsComponent } from './components/logs/logs.component';
 import { UserComponent } from './components/user/user.component';
 import { LogComponent } from './components/log/log.component';
+import { ContactsComponent } from './components/contacts/contacts.component';
 
 export const routes: Routes = [
   {
@@ -39,6 +40,11 @@ export const routes: Routes = [
         path: 'logs',
         component: LogsComponent,
         children: [{ path: ':id', component: LogComponent }],
+      },
+      {
+        path: 'contacts',
+        component: ContactsComponent,
+        // children: [{ path: ':id', component: LogComponent }],
       },
     ],
   },

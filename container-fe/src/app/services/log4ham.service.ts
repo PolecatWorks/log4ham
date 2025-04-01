@@ -1,16 +1,94 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { RestGeneric } from './rest-generic'; // Adjust the path as needed
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, catchError, forkJoin, map, Observable, Subject, switchMap, tap, throwError } from 'rxjs';
 import { User } from './user';
 import { asHttpParams, ListPages, PageOptions } from './pagination';
 import { Log } from './log';
+import { Contact } from './contact';
 
 @Injectable({
   providedIn: 'root',
 })
 export class Log4HamService {
-  constructor(private http: HttpClient) {}
+
+  contactMe: RestGeneric<Contact>;
+
+  constructor(private http: HttpClient) {
+    this.contactMe = new RestGeneric(this.http, this.prefix + '/contacts', 'Contact');
+  }
+
   private prefix = '/log4ham';
+
+
+
+
+
+  private contactsSource = new Subject<number>();
+  contactsSourceUpdate() {
+    return this.contactsSource.asObservable();
+  }
+  contactsSourceRefresh(now: number) {
+    this.contactsSource.next(now);
+  }
+
+
+  contactsGetPagedIds(query: PageOptions<Contact>) {
+    const params = asHttpParams(query);
+
+    return this.http.get<ListPages<number, Contact>>(this.prefix + '/contacts', { params: params }).pipe(
+      catchError(error => {
+        console.error('Error:', error);
+        return throwError(() => new Error('Could not process request: ' + error.message + ' (Status code: ' + error.status + ')'));
+      })
+    );
+  }
+
+  contactsGet(id: number) {
+    return this.http.get<Contact>(this.prefix + '/contacts/' + id).pipe(
+      catchError(error => {
+        console.error('Error:', error);
+        return throwError(() => new Error('Could not process request: ' + error.message + ' (Status code: ' + error.status + ')'));
+      })
+    );
+  }
+
+  contactsGetPagedDetail(query: PageOptions<Contact>): Observable<ListPages<Contact, Contact>> {
+    return this.usersGetPagedIds(query).pipe(
+      switchMap(idsPage => {
+        const detailRequests = idsPage.ids.map(id => this.contactsGet(Number(id)));
+        return forkJoin(detailRequests).pipe(
+          map(details => ({
+            ids: details,
+            pagination: idsPage.pagination,
+          }))
+        );
+      })
+    );
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   private usersSource = new Subject<number>();
 

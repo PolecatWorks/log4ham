@@ -210,7 +210,7 @@ async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: Cancellation
         .or(warp::path("logs").and(logs::logs(pool_pg.clone())))
         .or(warp::path("contacts").and(contacts::routes::contacts(pool_pg.clone())))
         .or(warp::path("stationsetups").and(stationsetup::routes::station_setup(pool_pg.clone())))
-        .or(warp::path("qsls").and(qslcard::routes::qsl(pool_pg.clone())))
+        .or(warp::path("qslcards").and(qslcard::routes::qsl(pool_pg.clone())))
         .recover(handle_rejection)
         .with(weblog);
 
