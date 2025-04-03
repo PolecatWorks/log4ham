@@ -18,12 +18,20 @@
           <th mat-header-cell *matHeaderCellDef>Id</th>
           <td mat-cell *matCellDef="let element">{{ element.id }}</td>
         </ng-container>
+        <ng-container matColumnDef="callsign">
+            <th mat-header-cell *matHeaderCellDef>Callsign</th>
+            <td mat-cell *matCellDef="let element">{{ element.callsign }}</td>
+          </ng-container>
 
         <!-- Name Column -->
         <ng-container matColumnDef="qso_date">
-          <th mat-header-cell *matHeaderCellDef>QSO Date</th>
+          <th mat-header-cell *matHeaderCellDef>Date</th>
           <td mat-cell *matCellDef="let element">{{ element.qso_date }}</td>
         </ng-container>
+        <ng-container matColumnDef="qso_time">
+            <th mat-header-cell *matHeaderCellDef>Time</th>
+            <td mat-cell *matCellDef="let element">{{ element.qso_time }}</td>
+          </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <!-- (click)="clickRow(row)" -->

@@ -21,7 +21,7 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class ContactsComponent {
 
-  displayedColumns = ['id', 'qso_date'];
+  displayedColumns = ['callsign', 'qso_date', 'qso_time'];
   data: PaginationDataSource<Contact>;
 
 
