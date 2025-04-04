@@ -7,7 +7,29 @@ use crate::error::MyError;
 use futures::Future;
 use log::{error, info};
 
+use tokio::runtime::{self, Runtime};
 use tokio_util::sync::CancellationToken;
+
+
+pub fn rt_multithreaded(threads: usize) -> Result<Runtime, MyError> {
+    if threads == 0 {
+        runtime::Builder::new_current_thread()
+            .enable_io()
+            .enable_time()
+            .build()
+            .map_err(MyError::from)
+    } else {
+        runtime::Builder::new_multi_thread()
+            .worker_threads(threads)
+            .thread_name(format!("threads-{threads}"))
+            .thread_stack_size(3 * 1024 * 1024)
+            .enable_io()
+            .enable_time()
+            .build()
+            .map_err(MyError::from)
+    }
+}
+
 
 /// run async function inside tokio instance on current thread
 pub fn run_in_tokio<F, T>(my_function: F) -> F::Output
@@ -16,20 +38,10 @@ where
 {
     info!("starting Tokio");
 
-    // tokio::runtime::Builder::new_multi_thread()
-    //         .worker_threads(4)
-    //         .thread_name("my-custom-name")
-    //         .thread_stack_size(3 * 1024 * 1024)
-    //         .enable_io()
-    //         .enable_time()
-    //         .build()
-    //         .expect("Runtime created in current thread")
-
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .expect("Runtime created in current thread")
+    rt_multithreaded(0)
+        .expect("Runtime created")
         .block_on(my_function)
+
 }
 
 /// Run async with cancellability via CancellationToken

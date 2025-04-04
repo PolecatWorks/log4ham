@@ -3,6 +3,7 @@ pub mod logs;
 pub mod users;
 mod stationsetup;
 mod qslcard;
+mod hello;
 
 use figment::{
     providers::{Format, Yaml},
@@ -198,6 +199,8 @@ pub async fn service_cancellable(ct: CancellationToken, config: MyConfig) -> Res
     Ok(())
 }
 
+
+
 async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: CancellationToken) {
     let prefix = state.config.webservice.prefix.clone();
 
@@ -207,6 +210,7 @@ async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: Cancellation
 
     let combined = warp::path("users")
         .and(users::users(pool_pg.clone()))
+        .or(warp::path("hello").and(hello::hello()))
         .or(warp::path("logs").and(logs::logs(pool_pg.clone())))
         .or(warp::path("contacts").and(contacts::routes::contacts(pool_pg.clone())))
         .or(warp::path("stationsetups").and(stationsetup::routes::station_setup(pool_pg.clone())))

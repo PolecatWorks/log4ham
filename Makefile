@@ -102,10 +102,10 @@ pg-docker-test-container:
 pg-test-forward:
 	kubectl port-forward pod/pg-test-pod 5432:5432
 
-bench: export DATABASE_URL=postgres://myuser:mypass@localhost/mydb
-bench:
-	cargo bench Handlers
-	open target/criterion/report/index.html
+criterion: export DATABASE_URL=postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
+criterion:
+	@cd container-be && cargo criterion
+	open container-be/target/criterion/report/index.html
 
 watch-db-check:
 	cd ${BE_DIR} && cargo watch -x "run -- db-check --config test-data/config-localhost.yaml --secrets test-data/secrets"
@@ -114,7 +114,8 @@ watch-config-check:
 	cd ${BE_DIR} && cargo watch -x "run -- config-check --config test-data/config-localhost.yaml --secrets test-data/secrets"
 
 watch-test:
-	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch --ignore test_data -x "test stationsetup"
+	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch --ignore test_data -x "test"
+# "test stationsetup"
 #  --nocapture
 
 watch-run:

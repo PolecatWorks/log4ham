@@ -33,21 +33,21 @@ chrono = {version = "0.4.40", features = ["serde"]}
 url = { version = "2", features = ["serde"] }
 
 # object_store ={ version = "~0.11", features = ["aws"] }
-reqwest = { version = "~0.12", default-features = false}
+reqwest = { version = "~0.12", default-features = false, features = ["json"] }
 hamsrs = { git = "https://github.com/PolecatWorks/hams.git" }
 derive_builder = "0.20.2"
 
 [dev-dependencies]
 criterion = { version = "~0.5", features = ["async_tokio"] }
 
-[[bench]]
-name = "validate"
-harness = false
+# [[bench]]
+# name = "validate"
+# harness = false
 
 [[bench]]
 name = "http"
 harness = false
 
-[[bench]]
-name = "handlers"
-harness = false
+# [[bench]]
+# name = "handlers"
+# harness = false
