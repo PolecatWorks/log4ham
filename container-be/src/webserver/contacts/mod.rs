@@ -1,6 +1,7 @@
 pub mod handlers;
 pub(crate) mod routes;
 
+use crate::webserver::SerializeDecimal;
 use crate::{
     error::MyError,
     webserver::{DbBigSerial, ListPages, PageOptions},
@@ -11,8 +12,6 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
 use sqlx::types::Decimal;
 use sqlx::{types::chrono, Arguments, PgPool, Postgres};
-use crate::webserver::SerializeDecimal;
-
 
 #[derive(sqlx::Type, Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub(crate) enum Band {
@@ -47,7 +46,6 @@ pub(crate) enum Mode {
     Satellite,
     Other,
 }
-
 
 // Define structs to represent our database tables
 #[serde_with::serde_as]

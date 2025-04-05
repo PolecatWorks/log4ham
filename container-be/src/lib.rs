@@ -15,7 +15,7 @@ pub mod app_schema;
 pub mod error;
 pub mod hams;
 pub mod persistence;
-mod tokio_tools;
+pub mod tokio_tools;
 pub mod webserver;
 
 /// Name of the Crate

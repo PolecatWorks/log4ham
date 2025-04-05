@@ -90,7 +90,9 @@ mod tests {
     use sqlx::types::Decimal;
 
     use crate::webserver::{
-        contacts::{self, Band, Contact, Mode}, qslcard::QslCardBuilder, users
+        contacts::{self, Band, Contact, Mode},
+        qslcard::QslCardBuilder,
+        users,
     };
 
     use super::*;

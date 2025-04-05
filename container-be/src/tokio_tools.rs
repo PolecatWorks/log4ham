@@ -10,7 +10,6 @@ use log::{error, info};
 use tokio::runtime::{self, Runtime};
 use tokio_util::sync::CancellationToken;
 
-
 pub fn rt_multithreaded(threads: usize) -> Result<Runtime, MyError> {
     if threads == 0 {
         runtime::Builder::new_current_thread()
@@ -30,7 +29,6 @@ pub fn rt_multithreaded(threads: usize) -> Result<Runtime, MyError> {
     }
 }
 
-
 /// run async function inside tokio instance on current thread
 pub fn run_in_tokio<F, T>(my_function: F) -> F::Output
 where
@@ -41,7 +39,6 @@ where
     rt_multithreaded(0)
         .expect("Runtime created")
         .block_on(my_function)
-
 }
 
 /// Run async with cancellability via CancellationToken

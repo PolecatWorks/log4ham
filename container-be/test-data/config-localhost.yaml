@@ -2,6 +2,7 @@
 hams:
   address: 127.0.0.1:8079
   prefix: hams
+  logging: true
   checks:
     timeout: 5
     fails: 2

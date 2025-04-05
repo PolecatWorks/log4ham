@@ -18,6 +18,9 @@ pub struct HamsConfig {
     pub address: SocketAddr,
     /// Prefix of the served API
     pub prefix: String,
+
+    /// enables logging for HaMS API
+    pub logging: bool,
 }
 
 pub async fn start_hams_api(config: HamsConfig, ct: CancellationToken) -> Result<(), MyError> {
@@ -27,11 +30,8 @@ pub async fn start_hams_api(config: HamsConfig, ct: CancellationToken) -> Result
         .map(|| "Hello from Hams".to_string())
         .with(weblog);
 
-    let (addr, server) = warp::serve(router).bind_with_graceful_shutdown(
-        config.address,
-        // ([0, 0, 0, 0], 8080),
-        async move { ct.cancelled().await },
-    );
+    let (addr, server) = warp::serve(router)
+        .bind_with_graceful_shutdown(config.address, async move { ct.cancelled().await });
     info!("Hams started on port {}", addr);
 
     server.await;

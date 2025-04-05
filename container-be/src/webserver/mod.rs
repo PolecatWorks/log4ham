@@ -1,9 +1,9 @@
 pub mod contacts;
-pub mod logs;
-pub mod users;
-mod stationsetup;
-mod qslcard;
 mod hello;
+pub mod logs;
+mod qslcard;
+mod stationsetup;
+pub mod users;
 
 use figment::{
     providers::{Format, Yaml},
@@ -61,7 +61,6 @@ impl<'de> serde_with::DeserializeAs<'de, Decimal> for SerializeDecimal {
         Decimal::from_str_exact(&s).map_err(serde::de::Error::custom)
     }
 }
-
 
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -199,8 +198,6 @@ pub async fn service_cancellable(ct: CancellationToken, config: MyConfig) -> Res
     Ok(())
 }
 
-
-
 async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: CancellationToken) {
     let prefix = state.config.webservice.prefix.clone();
 
@@ -294,7 +291,7 @@ async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Inf
                         reply::json(&"DB error".to_string()),
                     ),
                 }
-            },
+            }
             MyError::PreflightCheck => todo!(),
             MyError::ShutdownCheck => todo!(),
         }

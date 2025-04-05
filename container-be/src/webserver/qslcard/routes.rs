@@ -83,7 +83,10 @@ mod tests {
     use sqlx::types::Decimal;
 
     use crate::webserver::{
-        contacts::{self, Band, Contact, Mode}, handle_rejection, qslcard::QslCardBuilder, users, ListPages
+        contacts::{self, Band, Contact, Mode},
+        handle_rejection,
+        qslcard::QslCardBuilder,
+        users, ListPages,
     };
 
     use super::*;
