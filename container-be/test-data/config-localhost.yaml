@@ -15,7 +15,7 @@ webservice:
   forwarding_headers: []
 persistence:
   db:
-    pool_size: 10
+    pool_size: 20
     connection:
       url: postgres://localhost:5432/log4ham-pg-log4ham
       username_file: db/username

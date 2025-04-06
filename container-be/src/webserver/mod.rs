@@ -185,8 +185,6 @@ pub async fn service_cancellable(ct: CancellationToken, config: MyConfig) -> Res
 
     let hams = tokio::spawn(start_hams_api(state.config.hams.clone(), ct.clone()));
 
-    let client = reqwest::Client::new();
-
     let server = start_app_api(state.clone(), pool_pg, ct.clone());
 
     server.await;
@@ -212,8 +210,8 @@ async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: Cancellation
         .or(warp::path("contacts").and(contacts::routes::contacts(pool_pg.clone())))
         .or(warp::path("stationsetups").and(stationsetup::routes::station_setup(pool_pg.clone())))
         .or(warp::path("qslcards").and(qslcard::routes::qsl(pool_pg.clone())))
-        .recover(handle_rejection)
-        .with(weblog);
+        .recover(handle_rejection);
+        // .with(weblog);
 
     let prefix_path = warp::path(prefix.clone());
 

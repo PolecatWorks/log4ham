@@ -36,7 +36,7 @@ where
 {
     info!("starting Tokio");
 
-    rt_multithreaded(0)
+    rt_multithreaded(5)
         .expect("Runtime created")
         .block_on(my_function)
 }
