@@ -2,7 +2,7 @@ use crate::webserver::SerializeDecimal;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use sqlx::{types::Decimal, Arguments, Postgres};
+use sqlx::{types::Decimal, Arguments};
 
 use crate::webserver::DbBigSerial;
 

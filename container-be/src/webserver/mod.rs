@@ -5,11 +5,6 @@ mod qslcard;
 mod stationsetup;
 pub mod users;
 
-use figment::{
-    providers::{Format, Yaml},
-    Figment,
-};
-use figment_file_provider_adapter::FileAdapter;
 use log::info;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::json;
@@ -17,8 +12,7 @@ use sqlx::{types::Decimal, Pool, Postgres};
 use std::{
     convert::Infallible,
     net::SocketAddr,
-    path::{Path, PathBuf},
-    sync::{Arc, Mutex},
+    path::PathBuf,
 };
 use tokio_util::sync::CancellationToken;
 use warp::{
@@ -29,9 +23,8 @@ use warp::{
 
 use crate::{
     error::MyError,
-    hams::{start_hams_api, HamsConfig},
-    persistence::{PersistenceConfig, PersistenceState},
-    tokio_tools::{run_in_tokio, ThreadRuntime},
+    hams::start_hams_api,
+    tokio_tools::run_in_tokio,
     MyConfig, MyState, NAME,
 };
 

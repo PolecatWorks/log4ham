@@ -9,20 +9,18 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use bytes::Buf;
 use error::MyError;
 use figment::{
     providers::{Format, Yaml},
     Figment,
 };
 use figment_file_provider_adapter::FileAdapter;
-use futures::{Stream, StreamExt};
 use hams::HamsConfig;
 use persistence::{PersistenceConfig, PersistenceState};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use tokio_tools::ThreadRuntime;
 use url::Url;
-use warp::{reject::Reject, Rejection, Reply};
+use warp::reject::Reject;
 use webserver::WebServiceConfig;
 
 pub mod error;
