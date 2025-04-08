@@ -4,14 +4,27 @@
 //! The program will allow the generation or a JSON schema generating data to match the schema.
 //! Additionally the program can validate JSON loaded to the application or can run an http server to allow uploading of json file to the application.
 
+use std::{
+    path::Path,
+    sync::{Arc, Mutex},
+};
+
 use bytes::Buf;
 use error::MyError;
+use figment::{
+    providers::{Format, Yaml},
+    Figment,
+};
+use figment_file_provider_adapter::FileAdapter;
 use futures::{Stream, StreamExt};
+use hams::HamsConfig;
+use persistence::{PersistenceConfig, PersistenceState};
 use serde::{Deserialize, Serialize};
+use tokio_tools::ThreadRuntime;
 use url::Url;
 use warp::{reject::Reject, Rejection, Reply};
+use webserver::WebServiceConfig;
 
-pub mod app_schema;
 pub mod error;
 pub mod hams;
 pub mod persistence;
@@ -22,31 +35,6 @@ pub mod webserver;
 pub const NAME: &str = env!("CARGO_PKG_NAME");
 /// Version of the Crate
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-async fn receive_binary(
-    mut body: impl Stream<Item = Result<impl Buf, warp::Error>> + Unpin + Send + Sync,
-) -> Result<impl Reply, Rejection> {
-    // https://github.com/seanmonstar/warp/issues/448
-    // eprintln!("Got a file upload of ");
-    let mut chunk_tot = 0;
-    while let Some(buf) = body.next().await {
-        let mut buf = buf.unwrap();
-        while buf.remaining() > 0 {
-            let chunk = buf.chunk();
-            let chunk_len = chunk.len();
-            // println!("getting chunk of len = {chunk_len}");
-            chunk_tot += chunk_len;
-            buf.advance(chunk_len);
-        }
-    }
-    Ok(format!("Upload size = {chunk_tot}"))
-}
-#[derive(Serialize)]
-struct ValidationReply {
-    size: usize,
-    length: usize,
-    validate: bool,
-}
 
 // Marker trait to indicate MyError is a planned rejection type
 impl Reject for MyError {}
@@ -69,6 +57,46 @@ impl From<UrlWithUsernamePassword> for Url {
             return_url.set_username(&username).unwrap();
         }
         return_url
+    }
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct MyConfig {
+    /// Config of my web service
+    pub hams: HamsConfig,
+    pub runtime: ThreadRuntime,
+    pub webservice: WebServiceConfig,
+    pub persistence: PersistenceConfig,
+}
+
+impl MyConfig {
+    // Note the `nested` option on both `file` providers. This makes each
+    // top-level dictionary act as a profile.
+    pub fn figment<P: AsRef<Path> + Clone>(yaml_string: &str, secrets: P) -> Figment {
+        Figment::new().merge(FileAdapter::wrap(Yaml::string(yaml_string)).relative_to_dir(secrets))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct MyState {
+    name: String,
+    config: MyConfig,
+    db_state: PersistenceState,
+    pub count_good: Arc<Mutex<usize>>,
+    pub count_fail: Arc<Mutex<usize>>,
+}
+
+impl<'a, 'b: 'a> MyState {
+    pub async fn new<S: Into<String>>(name: S, config: &MyConfig) -> Result<MyState, MyError> {
+        let db_state = PersistenceState::new(&config.persistence).await?;
+
+        Ok(MyState {
+            name: name.into(),
+            config: config.clone(),
+            db_state,
+            count_good: Arc::new(Mutex::new(0)),
+            count_fail: Arc::new(Mutex::new(0)),
+        })
     }
 }
 

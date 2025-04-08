@@ -13,6 +13,6 @@ DROP TABLE contacts;
 
 
 DROP TYPE band;
-DROP TYPE mode_type;
+DROP TYPE mode;
 
 DROP TABLE users;

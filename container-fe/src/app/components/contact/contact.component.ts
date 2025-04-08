@@ -30,7 +30,14 @@ export class ContactComponent {
             return this.log4hamService.contact.get(param['id']);
           } else {
             console.log('id not provided so creating a new contact');
-            return of({} as Contact);
+
+            var myNewRecord = {} as Contact;
+
+            myNewRecord.qso_date = new Date().toISOString().split('T')[0];
+            myNewRecord.qso_time = new Date().toLocaleTimeString();
+            myNewRecord.is_confirmed = false;
+            console.log('myNewRecord: ', myNewRecord);
+            return of(myNewRecord);
           }
         })
       )

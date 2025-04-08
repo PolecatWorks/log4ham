@@ -31,8 +31,8 @@ use crate::{
     error::MyError,
     hams::{start_hams_api, HamsConfig},
     persistence::{PersistenceConfig, PersistenceState},
-    tokio_tools::run_in_tokio,
-    NAME,
+    tokio_tools::{run_in_tokio, ThreadRuntime},
+    MyConfig, MyState, NAME,
 };
 
 use warp::hyper::StatusCode;
@@ -137,46 +137,7 @@ pub struct WebServiceConfig {
     pub forwarding_headers: Vec<String>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct MyConfig {
-    /// Config of my web service
-    pub hams: HamsConfig,
-    pub webservice: WebServiceConfig,
-    pub persistence: PersistenceConfig,
-}
-
-impl MyConfig {
-    // Note the `nested` option on both `file` providers. This makes each
-    // top-level dictionary act as a profile.
-    pub fn figment<P: AsRef<Path> + Clone>(yaml_string: &str, secrets: P) -> Figment {
-        Figment::new().merge(FileAdapter::wrap(Yaml::string(yaml_string)).relative_to_dir(secrets))
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct MyState {
-    name: String,
-    config: MyConfig,
-    db_state: PersistenceState,
-    pub count_good: Arc<Mutex<usize>>,
-    pub count_fail: Arc<Mutex<usize>>,
-}
-
-impl<'a, 'b: 'a> MyState {
-    pub async fn new<S: Into<String>>(name: S, config: MyConfig) -> Result<MyState, MyError> {
-        let db_state = PersistenceState::new(config.persistence.clone()).await?;
-
-        Ok(MyState {
-            name: name.into(),
-            config,
-            db_state,
-            count_good: Arc::new(Mutex::new(0)),
-            count_fail: Arc::new(Mutex::new(0)),
-        })
-    }
-}
-
-pub async fn service_cancellable(ct: CancellationToken, config: MyConfig) -> Result<(), MyError> {
+pub async fn service_cancellable(ct: CancellationToken, config: &MyConfig) -> Result<(), MyError> {
     let state = MyState::new("apple", config).await?;
 
     let pool_pg = state.db_state.pool_pg.clone();
@@ -210,8 +171,8 @@ async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: Cancellation
         .or(warp::path("contacts").and(contacts::routes::contacts(pool_pg.clone())))
         .or(warp::path("stationsetups").and(stationsetup::routes::station_setup(pool_pg.clone())))
         .or(warp::path("qslcards").and(qslcard::routes::qsl(pool_pg.clone())))
-        .recover(handle_rejection);
-        // .with(weblog);
+        .recover(handle_rejection)
+        .with(weblog);
 
     let prefix_path = warp::path(prefix.clone());
 
@@ -243,10 +204,10 @@ fn with_pathbuf(
     warp::any().map(move || pathbuf.clone())
 }
 
-pub fn service_start(config: MyConfig) -> Result<(), MyError> {
+pub fn service_start(config: &MyConfig) -> Result<(), MyError> {
     let ct = CancellationToken::new();
 
-    run_in_tokio(service_cancellable(ct, config))
+    run_in_tokio("service", &config.runtime, service_cancellable(ct, config))
 }
 
 async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Infallible> {
@@ -292,6 +253,7 @@ async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Inf
             }
             MyError::PreflightCheck => todo!(),
             MyError::ShutdownCheck => todo!(),
+            MyError::SqlxMigrateError(migrate_error) => todo!(),
         }
     } else {
         eprintln!("unhandled error: {:?}", err);

@@ -32,19 +32,22 @@ pub struct PersistenceState {
 }
 
 impl PersistenceState {
-    pub async fn new(config: PersistenceConfig) -> Result<PersistenceState, MyError> {
+    pub async fn new(config: &PersistenceConfig) -> Result<PersistenceState, MyError> {
         let pool_pg = PgPoolOptions::new()
             .max_connections(config.db.pool_size)
             .connect(config.db.connection().as_str())
             .await?;
 
-        Ok(PersistenceState { config, pool_pg })
+        Ok(PersistenceState {
+            config: config.clone(),
+            pool_pg,
+        })
     }
 }
 
-pub async fn db_cancellable(
+pub async fn db_count_records(
     ct: CancellationToken,
-    config: PersistenceConfig,
+    config: &PersistenceConfig,
 ) -> Result<(), MyError> {
     let state = PersistenceState::new(config).await?;
 
@@ -57,12 +60,11 @@ pub async fn db_cancellable(
     // iterate over tables called users,logs and count the number of records in each
 
     for table in ["users", "logs"] {
-        info!("Checking table: {}: SELECT COUNT(*) FROM {}", table, table);
         let count_reply = sqlx::query(&format!("SELECT COUNT(*) FROM {}", table))
             .fetch_one(&pool_pg)
             .await?;
 
-        info!("{} count: {:?}", table, count_reply);
+        info!("{} count records: {:?}", table, count_reply);
     }
 
     ct.cancel();
@@ -70,8 +72,45 @@ pub async fn db_cancellable(
     Ok(())
 }
 
-pub fn db_check(config: PersistenceConfig) -> Result<(), MyError> {
+pub fn start_db_check_tables(config: &PersistenceConfig) -> Result<(), MyError> {
     let ct = CancellationToken::new();
 
-    run_in_tokio(db_cancellable(ct, config))
+    let runtime = crate::tokio_tools::ThreadRuntime {
+        threads: 0,
+        stack_size: 0,
+    };
+
+    run_in_tokio("db_check", &runtime, db_count_records(ct, config))
+}
+
+pub async fn db_migrate(ct: CancellationToken, config: &PersistenceConfig) -> Result<(), MyError> {
+    let state = PersistenceState::new(config).await?;
+
+    let pool = state.pool_pg.clone();
+
+    let select_reply = sqlx::query("SELECT 1").fetch_one(&pool).await?;
+
+    info!("select_reply: {:?}", select_reply);
+
+    // Run migrations
+    // sqlx::migrate!() macro finds the migrations folder relative to Cargo.toml
+    // It embeds the migration files into the binary at compile time.
+    sqlx::migrate!() // Path relative to Cargo.toml
+        .run(&pool)
+        .await?;
+
+    ct.cancel();
+
+    Ok(())
+}
+
+pub fn start_db_migrate(config: &PersistenceConfig) -> Result<(), MyError> {
+    let ct = CancellationToken::new();
+
+    let runtime = crate::tokio_tools::ThreadRuntime {
+        threads: 0,
+        stack_size: 0,
+    };
+
+    run_in_tokio("db_check", &runtime, db_migrate(ct, config))
 }

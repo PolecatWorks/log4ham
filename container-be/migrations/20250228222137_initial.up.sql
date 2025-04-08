@@ -14,8 +14,6 @@ CREATE TABLE logs (
     contacttime TIMESTAMP(0)
 );
 
--- Below is from Claude
-
 -- Create enum types for common fields
 CREATE TYPE band AS ENUM ('B160m', 'B80m', 'B60m', 'B40m', 'B30m', 'B20m', 'B17m', 'B15m', 'B12m', 'B10m', 'B6m', 'B2m', 'B70cm', 'B23cm', 'Other');
 CREATE TYPE mode AS ENUM ('Ssb', 'Am', 'FM', 'Cw', 'RTTY', 'PSK31', 'FT8', 'FT4', 'JS8', 'SSTV', 'EME', 'SATELLITE', 'Other');
@@ -40,7 +38,7 @@ CREATE TABLE contacts (
     state_province VARCHAR(50),
     county VARCHAR(50),
     notes TEXT,
-    is_confirmed BOOLEAN DEFAULT FALSE,
+    is_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

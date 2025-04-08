@@ -119,7 +119,7 @@ watch-test:
 #  --nocapture
 
 watch-run:
-	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch -x "run -- start --config test-data/config-localhost.yaml --secrets test-data/secrets"
+	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch -x "run -- start --config test-data/config-localhost.yaml --secrets test-data/secrets --automigrate"
 
 watch-serve:
 	cd ${FE_DIR} && ng serve

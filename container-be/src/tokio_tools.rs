@@ -7,11 +7,18 @@ use crate::error::MyError;
 use futures::Future;
 use log::{error, info};
 
+use serde::Deserialize;
 use tokio::runtime::{self, Runtime};
 use tokio_util::sync::CancellationToken;
 
-pub fn rt_multithreaded(threads: usize) -> Result<Runtime, MyError> {
-    if threads == 0 {
+#[derive(Deserialize, Debug, Clone)]
+pub struct ThreadRuntime {
+    pub threads: usize,
+    pub stack_size: usize,
+}
+
+pub fn rt_multithreaded(name: &str, runtime: &ThreadRuntime) -> Result<Runtime, MyError> {
+    if runtime.threads == 0 {
         runtime::Builder::new_current_thread()
             .enable_io()
             .enable_time()
@@ -19,9 +26,9 @@ pub fn rt_multithreaded(threads: usize) -> Result<Runtime, MyError> {
             .map_err(MyError::from)
     } else {
         runtime::Builder::new_multi_thread()
-            .worker_threads(threads)
-            .thread_name(format!("threads-{threads}"))
-            .thread_stack_size(3 * 1024 * 1024)
+            .worker_threads(runtime.threads)
+            .thread_name(name)
+            .thread_stack_size(runtime.stack_size)
             .enable_io()
             .enable_time()
             .build()
@@ -30,23 +37,28 @@ pub fn rt_multithreaded(threads: usize) -> Result<Runtime, MyError> {
 }
 
 /// run async function inside tokio instance on current thread
-pub fn run_in_tokio<F, T>(my_function: F) -> F::Output
+pub fn run_in_tokio<F, T>(name: &str, runtime: &ThreadRuntime, my_function: F) -> F::Output
 where
     F: Future<Output = Result<T, MyError>>,
 {
     info!("starting Tokio");
 
-    rt_multithreaded(5)
+    rt_multithreaded(name, runtime)
         .expect("Runtime created")
         .block_on(my_function)
 }
 
 /// Run async with cancellability via CancellationToken
-pub fn run_in_tokio_with_cancel<F, T>(cancel: CancellationToken, my_function: F) -> F::Output
+pub fn run_in_tokio_with_cancel<F, T>(
+    name: &str,
+    runtime: &ThreadRuntime,
+    cancel: CancellationToken,
+    my_function: F,
+) -> F::Output
 where
     F: Future<Output = Result<T, MyError>>,
 {
-    run_in_tokio(async {
+    run_in_tokio(name, runtime, async {
         tokio::select! {
             _ = cancel.cancelled() => {
                 error!("Token cancelled");

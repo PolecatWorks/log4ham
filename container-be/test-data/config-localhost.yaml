@@ -9,6 +9,9 @@ hams:
     preflights: []
     # - http://localhost:4201
     shutdowns: []
+runtime:
+  stack_size: 3145728
+  threads: 4
 webservice:
   prefix: log4ham
   address: 0.0.0.0:8080

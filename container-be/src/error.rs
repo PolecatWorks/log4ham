@@ -28,6 +28,8 @@ pub enum MyError {
     FigmentError(#[from] figment::error::Error),
     #[error("Sqlx error `{0}`")]
     SqlxError(#[from] sqlx::Error),
+    #[error("SQLX Migrate error `{0}`")]
+    SqlxMigrateError(#[from] sqlx::migrate::MigrateError),
     #[error("PreFlight error")]
     PreflightCheck,
     /// Failed to complete shutdown check
