@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { User } from './user';
+import { User } from '../structs/user';
 import { CollectionViewer, DataSource } from '@angular/cdk/collections';
 import { Log4HamService } from './log4ham.service';
 

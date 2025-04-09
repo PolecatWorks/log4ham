@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Log4HamService } from '../../services/log4ham.service';
 import { of, switchMap } from 'rxjs';
-import { User } from '../../services/user';
+import { User } from '../../structs/user';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';

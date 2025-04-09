@@ -124,6 +124,9 @@ watch-run:
 watch-serve:
 	cd ${FE_DIR} && ng serve
 
+format:
+	cd ${BE_DIR} && cargo fmt --all -- --check
+	cd ${FE_DIR} && ng lint
 
 # Run the container
 docker-fe-dev:

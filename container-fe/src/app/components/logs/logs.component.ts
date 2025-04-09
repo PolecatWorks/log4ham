@@ -5,7 +5,7 @@ import { MatTableModule } from '@angular/material/table';
 import { PaginationDataSource } from '../../services/paginated-data-source.service';
 import { PageOptions } from '../../services/pagination';
 import { Log4HamService } from '../../services/log4ham.service';
-import { Log } from '../../services/log';
+import { Log } from '../../structs/log';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink, RouterOutlet } from '@angular/router';
 

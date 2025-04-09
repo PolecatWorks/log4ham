@@ -66,6 +66,50 @@
 
       <mat-slide-toggle [(ngModel)]="record.is_confirmed" name="is_confirmed">Confirmed</mat-slide-toggle>
 
+      <hr>
+
+      <mat-form-field>
+        <mat-label>RST Sent</mat-label>
+        <input matInput [(ngModel)]="record.rst_sent" name="rst_sent" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>RST Received</mat-label>
+        <input matInput [(ngModel)]="record.rst_received" name="rst_received" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Name Received</mat-label>
+        <input matInput [(ngModel)]="record.name_received" name="name_received" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>QTH Received</mat-label>
+        <input matInput [(ngModel)]="record.qth_received" name="qth_received" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Grid Square</mat-label>
+        <input matInput [(ngModel)]="record.grid_square" name="grid_square" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Country</mat-label>
+        <input matInput [(ngModel)]="record.country" name="country" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>State/Province</mat-label>
+        <input matInput [(ngModel)]="record.state_province" name="state_province" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Notes</mat-label>
+        <textarea matInput [(ngModel)]="record.notes" name="notes"></textarea>
+      </mat-form-field>
+
+
+      <hr>
 
 
       <button mat-raised-button>Submit</button>

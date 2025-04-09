@@ -1,6 +1,6 @@
 import { Component, ViewChild } from '@angular/core';
 import { Log4HamService } from '../../services/log4ham.service';
-import { Contact } from '../../services/contact';
+import { Contact } from '../../structs/contact';
 import { PaginationDataSource } from '../../services/paginated-data-source.service';
 import { PageOptions } from '../../services/pagination';
 import { CommonModule } from '@angular/common';

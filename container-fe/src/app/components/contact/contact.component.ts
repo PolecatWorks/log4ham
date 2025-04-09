@@ -4,10 +4,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
-import { Contact } from '../../services/contact';
+import { Contact } from '../../structs/contact';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Log4HamService } from '../../services/log4ham.service';
 import { of, switchMap } from 'rxjs';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-contact',
@@ -21,7 +22,8 @@ export class ContactComponent {
   constructor(
     private activatedRoute: ActivatedRoute,
     private log4hamService: Log4HamService,
-    private router: Router
+    private authService: AuthService,
+    private router: Router,
   ) {
     this.activatedRoute.params
       .pipe(
@@ -32,7 +34,7 @@ export class ContactComponent {
             console.log('id not provided so creating a new contact');
 
             var myNewRecord = {} as Contact;
-
+            myNewRecord.user_id = authService.getUserId();
             myNewRecord.qso_date = new Date().toISOString().split('T')[0];
             myNewRecord.qso_time = new Date().toLocaleTimeString();
             myNewRecord.is_confirmed = false;

@@ -2,7 +2,7 @@ import { AfterViewInit, Component, ViewChild } from '@angular/core';
 import { Log4HamService } from '../../services/log4ham.service';
 import { CommonModule } from '@angular/common';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { User } from '../../services/user';
+import { User } from '../../structs/user';
 import { PaginationDataSource } from '../../services/paginated-data-source.service';
 import { PageOptions } from '../../services/pagination';
 import { RouterLink, RouterOutlet } from '@angular/router';

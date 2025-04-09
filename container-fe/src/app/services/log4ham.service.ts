@@ -2,10 +2,11 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { RestGeneric } from './rest-generic'; // Adjust the path as needed
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, catchError, forkJoin, map, Observable, Subject, switchMap, tap, throwError } from 'rxjs';
-import { User } from './user';
+import { User } from '../structs/user';
 import { asHttpParams, ListPages, PageOptions } from './pagination';
-import { Log } from './log';
-import { Contact } from './contact';
+import { Log } from '../structs/log';
+import { Contact } from '../structs/contact';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root',
@@ -14,7 +15,10 @@ export class Log4HamService {
 
   contact: RestGeneric<Contact>;
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService,
+  ) {
     this.contact = new RestGeneric(this.http, this.prefix + '/contacts', 'Contact');
   }
 
