@@ -9,11 +9,7 @@ use log::info;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::json;
 use sqlx::{types::Decimal, Pool, Postgres};
-use std::{
-    convert::Infallible,
-    net::SocketAddr,
-    path::PathBuf,
-};
+use std::{convert::Infallible, net::SocketAddr, path::PathBuf};
 use tokio_util::sync::CancellationToken;
 use warp::{
     reject::Rejection,
@@ -22,10 +18,7 @@ use warp::{
 };
 
 use crate::{
-    error::MyError,
-    hams::start_hams_api,
-    tokio_tools::run_in_tokio,
-    MyConfig, MyState, NAME,
+    error::MyError, hams::start_hams_api, tokio_tools::run_in_tokio, MyConfig, MyState, NAME,
 };
 
 use warp::hyper::StatusCode;

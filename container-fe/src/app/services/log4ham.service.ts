@@ -12,22 +12,16 @@ import { AuthService } from './auth.service';
   providedIn: 'root',
 })
 export class Log4HamService {
-
   contact: RestGeneric<Contact>;
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService,
+    private authService: AuthService
   ) {
     this.contact = new RestGeneric(this.http, this.prefix + '/contacts', 'Contact');
   }
 
   private prefix = '/log4ham';
-
-
-
-
-
 
   private usersSource = new Subject<number>();
 
@@ -118,7 +112,6 @@ export class Log4HamService {
   }
 
   usersGetPagedIds(query: PageOptions<User>) {
-
     const params = asHttpParams(query);
 
     return this.http.get<ListPages<number, User>>(this.prefix + '/users', { params: params }).pipe(

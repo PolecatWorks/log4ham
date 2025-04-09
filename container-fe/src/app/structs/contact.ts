@@ -22,7 +22,6 @@ export interface IContact {
   updated_at?: string;
 }
 
-
 export class Contact implements IContact {
   id?: number;
   user_id: number;

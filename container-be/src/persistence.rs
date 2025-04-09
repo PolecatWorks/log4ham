@@ -1,4 +1,3 @@
-
 use log::info;
 use serde::Deserialize;
 use sqlx::{postgres::PgPoolOptions, PgPool};

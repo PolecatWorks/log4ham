@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, ViewChild, AfterViewInit } from '@angular/core';
 import { Log4HamService } from '../../services/log4ham.service';
 import { Contact } from '../../structs/contact';
 import { PaginationDataSource } from '../../services/paginated-data-source.service';
@@ -10,24 +10,17 @@ import { RouterLink, RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
-
 @Component({
   selector: 'app-contacts',
-  imports: [
-    CommonModule, MatTableModule, MatPaginatorModule, RouterOutlet, RouterLink, MatButtonModule, MatIconModule,
-  ],
+  imports: [CommonModule, MatTableModule, MatPaginatorModule, RouterOutlet, RouterLink, MatButtonModule, MatIconModule],
   templateUrl: './contacts.component.html',
-  styleUrl: './contacts.component.scss'
+  styleUrl: './contacts.component.scss',
 })
-export class ContactsComponent {
-
-  displayedColumns = ['callsign', 'qso_date', 'qso_time'];
+export class ContactsComponent implements AfterViewInit {
+  displayedColumns = ['callsign', 'qso_date', 'qso_time', 'frequency', 'band', 'mode'];
   data: PaginationDataSource<Contact>;
 
-
-  constructor(
-    private log4Ham: Log4HamService,
-  ) {
+  constructor(private log4Ham: Log4HamService) {
     this.data = new PaginationDataSource<Contact>(
       (request: PageOptions<Contact>) => this.log4Ham.contact.getPagedDetail(request),
       this.log4Ham.contact.sourceUpdate(),
@@ -35,10 +28,9 @@ export class ContactsComponent {
       1
     );
 
-    this.log4Ham.contact.getPagedIds({ page: 0, size: 10 }).subscribe((data) => {
+    this.log4Ham.contact.getPagedIds({ page: 0, size: 10 }).subscribe(data => {
       console.log('Contact IDs via Generic:', data);
-    }
-    );
+    });
   }
 
   ngAfterViewInit(): void {
@@ -48,7 +40,4 @@ export class ContactsComponent {
     console.log('Have send sortBy and fetch');
   }
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-
-
-
 }

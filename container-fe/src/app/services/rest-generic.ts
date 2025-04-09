@@ -1,11 +1,10 @@
-import { HttpClient, HttpParams } from "@angular/common/http";
-import { catchError, forkJoin, map, Observable, Subject, switchMap, tap, throwError } from "rxjs";
-import { ListPages, PageOptions } from "./pagination";
-import { Contact } from "../structs/contact";
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { catchError, forkJoin, map, Observable, Subject, switchMap, tap, throwError } from 'rxjs';
+import { ListPages, PageOptions } from './pagination';
+import { Contact } from '../structs/contact';
 
 export function asHttpParams<T>(options: PageOptions<T>): HttpParams {
-
-  var simpleObj: { [id: string] : string; } = {};
+  const simpleObj: Record<string, string> = {};
 
   simpleObj['size'] = String(options.size);
 
@@ -13,20 +12,18 @@ export function asHttpParams<T>(options: PageOptions<T>): HttpParams {
     simpleObj['page'] = String(options.page);
   }
   if (options.sort != undefined) {
-    simpleObj["sortProperty"] = String(options.sort.property);
-    simpleObj["sortOrder"] =  options.sort.order;
+    simpleObj['sortProperty'] = String(options.sort.property);
+    simpleObj['sortOrder'] = options.sort.order;
   }
 
-  return new HttpParams({fromObject: simpleObj});
+  return new HttpParams({ fromObject: simpleObj });
 }
-
-
 
 export class RestGeneric<T> {
   constructor(
     private http: HttpClient,
     public url: string,
-    public name: string,
+    public name: string
   ) {}
 
   private source = new Subject<number>();
@@ -100,5 +97,4 @@ export class RestGeneric<T> {
       })
     );
   }
-
 }

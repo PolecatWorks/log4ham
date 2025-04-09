@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import {MatSlideToggleModule} from '@angular/material/slide-toggle';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Contact } from '../../structs/contact';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Log4HamService } from '../../services/log4ham.service';
@@ -14,7 +14,7 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-contact',
   imports: [MatButtonModule, MatFormFieldModule, MatInputModule, FormsModule, MatSlideToggleModule],
   templateUrl: './contact.component.html',
-  styleUrl: './contact.component.scss'
+  styleUrl: './contact.component.scss',
 })
 export class ContactComponent {
   record: Contact = {} as Contact;
@@ -23,7 +23,7 @@ export class ContactComponent {
     private activatedRoute: ActivatedRoute,
     private log4hamService: Log4HamService,
     private authService: AuthService,
-    private router: Router,
+    private router: Router
   ) {
     this.activatedRoute.params
       .pipe(
@@ -33,10 +33,11 @@ export class ContactComponent {
           } else {
             console.log('id not provided so creating a new contact');
 
-            var myNewRecord = {} as Contact;
+            const myNewRecord = {} as Contact;
             myNewRecord.user_id = authService.getUserId();
+            const dateNow = new Date();
             myNewRecord.qso_date = new Date().toISOString().split('T')[0];
-            myNewRecord.qso_time = new Date().toLocaleTimeString();
+            myNewRecord.qso_time = `${dateNow.getHours()}:${dateNow.getMinutes()}`;
             myNewRecord.is_confirmed = false;
             console.log('myNewRecord: ', myNewRecord);
             return of(myNewRecord);
@@ -59,7 +60,6 @@ export class ContactComponent {
           console.log('Created: ', data);
 
           console.log('typeof id is ', typeof data.id);
-
 
           this.router.navigate(['..'], { relativeTo: this.activatedRoute });
         },
