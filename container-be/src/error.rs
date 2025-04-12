@@ -24,6 +24,8 @@ pub enum MyError {
     /// Improve this to carry an object to describe the details of the validation failure
     #[error("Validation error")]
     ValidationError(),
+    #[error("Parquet error `{0}`")]
+    ParquetError(#[from] parquet::errors::ParquetError),
     #[error("Figment error `{0}`")]
     FigmentError(#[from] figment::error::Error),
     #[error("Sqlx error `{0}`")]

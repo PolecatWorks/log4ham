@@ -91,6 +91,9 @@ pg-schema-run:
 pg-schema-revert:
 	@cd container-be && sqlx migrate revert --database-url postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
 
+pg-sqlx-prepare:
+	@cd container-be && cargo sqlx prepare --database-url postgres://${PG_USER}:${PGPASSWORD}@localhost/${PG_NAME}
+
 pg-test-container:
 	@kubectl delete pod pg-test-pod || true
 	@kubectl run -it --rm pg-test-pod --image=postgres:17.4 --env="POSTGRES_USER=${PG_USER}" --env="POSTGRES_PASSWORD=${PGPASSWORD}" --env="POSTGRES_DB=${PG_NAME}" --port=5432
@@ -119,7 +122,10 @@ watch-test:
 #  --nocapture
 
 watch-run:
-	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch -x "run -- start --config test-data/config-localhost.yaml --secrets test-data/secrets --automigrate"
+	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch  -x "run -- start --config test-data/config-localhost.yaml --secrets test-data/secrets --automigrate"
+
+watch-backup:
+	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch --ignore 'test-data/backups/*' -x "run -- backup --config test-data/config-localhost.yaml --secrets test-data/secrets test-data/backups"
 
 watch-serve:
 	cd ${FE_DIR} && ng serve

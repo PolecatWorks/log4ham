@@ -240,6 +240,7 @@ async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Inf
             MyError::PreflightCheck => todo!(),
             MyError::ShutdownCheck => todo!(),
             MyError::SqlxMigrateError(migrate_error) => todo!(),
+            MyError::ParquetError(parquet_error) => todo!(),
         }
     } else {
         eprintln!("unhandled error: {:?}", err);

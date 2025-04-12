@@ -1,3 +1,4 @@
+use parquet_derive::ParquetRecordWriter;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use warp::Filter;
@@ -5,6 +6,7 @@ use warp::Filter;
 use super::{with_db_pool_pg, DbBigSerial, PageOptions};
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow, PartialEq, Clone)]
+// #[derive(ParquetRecordWriter)]
 pub struct User {
     pub id: Option<DbBigSerial>,
     pub forename: String,

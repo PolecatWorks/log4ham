@@ -6,7 +6,7 @@ use env_logger::Env;
 use log::{debug, error, info};
 use log4ham::{
     error::MyError,
-    persistence::{start_db_check_tables, start_db_migrate},
+    persistence::{start_db_backup, start_db_check_tables, start_db_migrate},
     webserver::service_start,
 };
 
@@ -53,6 +53,19 @@ enum Commands {
         /// Sets a custom secrets directory
         #[arg(short, long, value_name = "DIR", default_value = PathBuf::from("secrets").into_os_string())]
         secrets: PathBuf,
+    },
+    /// DB Backup
+    Backup {
+        /// Sets a custom config file
+        #[arg(short, long, value_name = "FILE")]
+        config: PathBuf,
+        /// Sets a custom secrets directory
+        #[arg(short, long, value_name = "DIR", default_value = PathBuf::from("secrets").into_os_string())]
+        secrets: PathBuf,
+
+        /// define the backup directory
+        #[arg(value_name = "BACKUPDIR")]
+        backup_dir: PathBuf,
     },
     ConfigCheck {
         /// Sets a custom config file
@@ -102,7 +115,7 @@ fn main() -> Result<(), MyError> {
 
             let config: MyConfig = MyConfig::figment(&config_yaml, secrets).extract()?;
 
-            info!("Loaded config {:#?}", config);
+            debug!("Loaded config {:#?}", config);
 
             start_db_check_tables(&config.persistence)?;
         }
@@ -113,7 +126,7 @@ fn main() -> Result<(), MyError> {
 
             let config: MyConfig = MyConfig::figment(&config_yaml, secrets).extract()?;
 
-            info!("Loaded config {:#?}", config);
+            debug!("Loaded config {:#?}", config);
         }
         Commands::Migrate { config, secrets } => {
             info!("Starting Migration for {NAME}:{VERSION}");
@@ -122,9 +135,24 @@ fn main() -> Result<(), MyError> {
 
             let config: MyConfig = MyConfig::figment(&config_yaml, secrets).extract()?;
 
-            info!("Loaded config {:#?}", config);
+            debug!("Loaded config {:#?}", config);
 
             start_db_migrate(&config.persistence)?;
+        }
+        Commands::Backup {
+            config,
+            secrets,
+            backup_dir,
+        } => {
+            info!("Starting DB Backup for {NAME}:{VERSION}");
+
+            let config_yaml = std::fs::read_to_string(config.clone())?;
+
+            let config: MyConfig = MyConfig::figment(&config_yaml, secrets).extract()?;
+
+            debug!("Loaded config {:#?}", config);
+
+            start_db_backup(&config.persistence, &backup_dir)?;
         }
     }
 
