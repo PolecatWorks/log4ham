@@ -1,18 +1,18 @@
 use std::{path::PathBuf, sync::Arc};
 
+use ::parquet::data_type::{ByteArray, ByteArrayType, Int64Type};
+use ::parquet::file::properties::WriterProperties;
+use ::parquet::file::writer::SerializedFileWriter;
+use ::parquet::schema::parser::parse_message_type;
 use log::{debug, info, warn};
-use parquet::record::RowAccessor;
-use parquet::{
-    file::{properties::WriterProperties, writer::SerializedFileWriter},
-    schema::parser::parse_message_type,
-};
+use parquet::generate_parquet_schema_from_table;
 use serde::Deserialize;
 use sqlx::Row;
 use sqlx::{postgres::PgPoolOptions, Column, Executor, PgPool, Pool};
 use tokio_util::sync::CancellationToken;
 use url::Url;
 
-// mod parquet;
+mod parquet;
 
 use crate::{error::MyError, tokio_tools::run_in_tokio, webserver::users, UrlWithUsernamePassword};
 // use sqlx::Row;
@@ -142,13 +142,8 @@ pub async fn db_backup(
 
     println!("Describe result: {:?}", users_describe);
 
-    let users_response = sqlx::query("SELECT * FROM users")
-        // .bind("users")
-        .fetch_all(&pool)
-        .await
-        .expect("Connect to DB");
+    let users_response = sqlx::query("SELECT * FROM users").fetch_all(&pool).await?;
 
-    // Run backup
     println!("DB Response: {:?}", users_response);
 
     let user_schema = "
@@ -160,8 +155,12 @@ pub async fn db_backup(
         }
     ";
 
-    let schema = Arc::new(parse_message_type(user_schema)?);
-    println!("Schema: {:?}", schema);
+    let schema_manual = Arc::new(parse_message_type(user_schema)?);
+    println!("Manual Schema: {:#?}", schema_manual);
+    let schema_auto = generate_parquet_schema_from_table(&pool, "users").await?;
+    println!("Automatic Schema: {:#?}", schema_auto);
+
+    let schema = schema_auto;
 
     let file_name = "backup.parquet";
 
@@ -171,77 +170,36 @@ pub async fn db_backup(
     let file = std::fs::File::create(&abs_file_name)?;
     let mut writer = SerializedFileWriter::new(file, schema, props)?;
 
-    // Write each user as a row
     let mut row_group_writer = writer.next_row_group()?;
     for column in users_describe.columns() {
         println!("Column: {:?}", column.name());
 
         match column.name() {
             "id" => {
-                println!("Column: {:?}", column.name());
                 let mut column = row_group_writer.next_column()?.unwrap();
                 let values: &[i64] = &[1, 2, 4, 8];
                 column
-                    .typed::<parquet::data_type::Int64Type>()
+                    .typed::<Int64Type>()
                     .write_batch(&values[..], None, None)?;
                 column.close()?;
             }
-            "forename" => {
-                println!("Column: {:?}", column.name());
+            "forename" | "surname" | "password" => {
                 let mut column = row_group_writer.next_column()?.unwrap();
-                let values: Vec<parquet::data_type::ByteArray> = vec![
-                    parquet::data_type::ByteArray::from("John"),
-                    parquet::data_type::ByteArray::from("Jane"),
-                    parquet::data_type::ByteArray::from("Doe"),
-                    parquet::data_type::ByteArray::from("Smith"),
+                let values: Vec<ByteArray> = vec![
+                    ByteArray::from("example"),
+                    ByteArray::from("data"),
+                    ByteArray::from("for"),
+                    ByteArray::from("testing"),
                 ];
                 column
-                    .typed::<parquet::data_type::ByteArrayType>()
-                    .write_batch(&values[..], None, None)?;
-                column.close()?;
-            }
-            "surname" => {
-                println!("Column: {:?}", column.name());
-                let mut column = row_group_writer.next_column()?.unwrap();
-                let values: Vec<parquet::data_type::ByteArray> = vec![
-                    parquet::data_type::ByteArray::from("Smith"),
-                    parquet::data_type::ByteArray::from("Doe"),
-                    parquet::data_type::ByteArray::from("Brown"),
-                    parquet::data_type::ByteArray::from("Johnson"),
-                ];
-                column
-                    .typed::<parquet::data_type::ByteArrayType>()
-                    .write_batch(&values[..], None, None)?;
-                column.close()?;
-            }
-            "password" => {
-                println!("Column: {:?}", column.name());
-                let mut column = row_group_writer.next_column()?.unwrap();
-                let values: Vec<parquet::data_type::ByteArray> = vec![
-                    parquet::data_type::ByteArray::from("password1"),
-                    parquet::data_type::ByteArray::from("password2"),
-                    parquet::data_type::ByteArray::from("password3"),
-                    parquet::data_type::ByteArray::from("password4"),
-                ];
-                column
-                    .typed::<parquet::data_type::ByteArrayType>()
+                    .typed::<ByteArrayType>()
                     .write_batch(&values[..], None, None)?;
                 column.close()?;
             }
             _ => {}
         }
+    }
 
-        //    row_group_writer
-        //        .get_column_writer(column)?
-        //        .write_batch(&users_response, None, None)?;
-    }
-    for user in users_response {
-        println!("Processing row {:?}", user);
-        //    row.add_field(user.id.map(|id| id.into()).unwrap_or_default());
-        //    row.add_field(user.forename.clone().into());
-        //    row.add_field(user.surname.clone().into());
-        //    row.add_field(user.password.clone().into());
-    }
     let row_meta = row_group_writer.close()?;
     println!("Row group metadata: {:?}", row_meta);
 
