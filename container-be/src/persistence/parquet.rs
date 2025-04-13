@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
-use log::warn;
+use log::{debug, warn};
 use parquet::basic::Type as BasicType;
-use parquet::basic::{LogicalType, Repetition};
+
+use parquet::basic::{LogicalType, Repetition, TimeUnit, Type as PhysicalType};
 use parquet::schema::types::Type;
+use sqlx::postgres::PgTypeInfo;
+use sqlx::TypeInfo;
 use sqlx::{Executor, Pool};
 
 use crate::error::MyError;
@@ -22,6 +25,12 @@ pub async fn generate_parquet_schema_from_table(
     let mut fields = Vec::new();
 
     for column in describe.columns() {
+        let field_type = column.type_info();
+
+        match field_type {
+            _ => println!("Add more types here field_type: {:?}", field_type),
+        };
+
         let field = match column.type_info().to_string().as_str() {
             "INT4" | "INT8" => Type::primitive_type_builder(column.name(), BasicType::INT64)
                 .with_repetition(Repetition::REQUIRED)
@@ -64,32 +73,95 @@ pub async fn generate_parquet_schema_from_table(
     Ok(Arc::new(schema))
 }
 
-// pub fn write_optional_column<T>(
-//     column_writer: &mut parquet::column::writer::ColumnWriter,
-//     values: &[T],
-//     definition_levels: &[i16],
-// ) -> Result<(), parquet::errors::ParquetError>
-// where
-//     T: parquet::data_type::DataType,
-// {
-//     match column_writer {
-//         parquet::column::writer::ColumnWriter::Int64ColumnWriter(ref mut typed_writer) => {
-//             typed_writer.write_batch(values, Some(definition_levels), None)?;
-//         }
-//         parquet::column::writer::ColumnWriter::ByteArrayColumnWriter(ref mut typed_writer) => {
-//             typed_writer.write_batch(values, Some(definition_levels), None)?;
-//         }
-//         parquet::column::writer::ColumnWriter::BooleanColumnWriter(ref mut typed_writer) => {
-//             typed_writer.write_batch(values, Some(definition_levels), None)?;
-//         }
-//         parquet::column::writer::ColumnWriter::DoubleColumnWriter(ref mut typed_writer) => {
-//             typed_writer.write_batch(values, Some(definition_levels), None)?;
-//         }
-//         _ => {
-//             return Err(parquet::errors::ParquetError::General(
-//                 "Unsupported column type".to_string(),
-//             ));
-//         }
-//     }
-//     Ok(())
-// }
+// Helper function to map PgTypeInfo to Parquet type details
+fn map_pg_type_to_parquet(
+    col_name: &str,
+    pg_type_info: &PgTypeInfo,
+) -> Result<(PhysicalType, Option<LogicalType>), MyError> {
+    let type_name = pg_type_info.name();
+    debug!("Mapping PG column '{}' with type '{}'", col_name, type_name);
+
+    match type_name {
+        // Integers
+        "INT2" | "SMALLINT" | "SMALLSERIAL" | "INT4" | "INTEGER" | "SERIAL" => {
+            Ok((PhysicalType::INT32, None))
+        }
+        "INT8" | "BIGINT" | "BIGSERIAL" | "OID" => Ok((PhysicalType::INT64, None)),
+
+        // Floats
+        "FLOAT4" | "REAL" => Ok((PhysicalType::FLOAT, None)),
+        "FLOAT8" | "DOUBLE PRECISION" => Ok((PhysicalType::DOUBLE, None)),
+
+        // Boolean
+        "BOOL" | "BOOLEAN" => Ok((PhysicalType::BOOLEAN, None)),
+
+        // Text / String types
+        "VARCHAR" | "TEXT" | "CHAR" | "BPCHAR" | "NAME" | "UNKNOWN" => {
+            Ok((PhysicalType::BYTE_ARRAY, Some(LogicalType::String))) // formerly UTF8
+        }
+
+        // Binary data
+        "BYTEA" => Ok((PhysicalType::BYTE_ARRAY, None)),
+
+        // Date/Time types
+        "TIMESTAMP" => Ok((
+            // Timestamp without timezone
+            PhysicalType::INT64,
+            Some(LogicalType::Timestamp {
+                is_adjusted_to_u_t_c: false,                // Not explicitly UTC
+                unit: TimeUnit::MICROS(Default::default()), // Store microseconds
+            }),
+        )),
+        "TIMESTAMPTZ" => Ok((
+            // Timestamp with timezone (implicitly UTC in Rust/Parquet)
+            PhysicalType::INT64,
+            Some(LogicalType::Timestamp {
+                is_adjusted_to_u_t_c: true,
+                unit: TimeUnit::MICROS(Default::default()), // Store microseconds
+            }),
+        )),
+        "DATE" => Ok((PhysicalType::INT32, Some(LogicalType::Date))),
+        // Consider mapping TIME to INT64 MICROS if needed, requires LogicalType::Time
+        "TIME" => Ok((
+            PhysicalType::INT64,
+            Some(LogicalType::Time {
+                is_adjusted_to_u_t_c: false, // PostgreSQL TIME doesn't store timezone
+                unit: TimeUnit::MICROS(Default::default()),
+            }),
+        )),
+
+        // UUID
+        "UUID" => Ok((PhysicalType::FIXED_LEN_BYTE_ARRAY, Some(LogicalType::Uuid))),
+        // JSON
+        "JSON" | "JSONB" => Ok((PhysicalType::BYTE_ARRAY, Some(LogicalType::Json))),
+
+        // --- Complex Types (Handling requires more sophisticated logic) ---
+        // Decimal/Numeric: Mapping is tricky. BYTE_ARRAY (String) is safest for dynamic schema.
+        // Scale/Precision needed for Decimal Logical Type aren't easily available here.
+        "NUMERIC" | "DECIMAL" => {
+            warn!(
+                "Mapping NUMERIC/DECIMAL column '{}' to String (BYTE_ARRAY) for safety.",
+                col_name
+            );
+            Ok((PhysicalType::BYTE_ARRAY, Some(LogicalType::String)))
+        }
+
+        // Arrays: Parquet requires LIST structure. Skipping in this basic example.
+        name if name.starts_with('_') => {
+            warn!(
+                "Skipping array column '{}' (type: {}). Dynamic LIST generation not implemented.",
+                col_name, name
+            );
+            Err(MyError::Message("Array column skipped")) // Signal to skip this column
+        }
+
+        // Fallback for other unknown types
+        _ => {
+            warn!(
+                "Unknown PostgreSQL type '{}' for column '{}'. Falling back to String (BYTE_ARRAY).",
+                type_name, col_name
+            );
+            Ok((PhysicalType::BYTE_ARRAY, Some(LogicalType::String)))
+        }
+    }
+}

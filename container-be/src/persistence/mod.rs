@@ -171,33 +171,46 @@ pub async fn db_backup(
     let mut writer = SerializedFileWriter::new(file, schema, props)?;
 
     let mut row_group_writer = writer.next_row_group()?;
+
     for column in users_describe.columns() {
         println!("Column: {:?}", column.name());
 
-        match column.name() {
-            "id" => {
-                let mut column = row_group_writer.next_column()?.unwrap();
-                let values: &[i64] = &[1, 2, 4, 8];
-                column
-                    .typed::<Int64Type>()
-                    .write_batch(&values[..], None, None)?;
-                column.close()?;
+        let mut column_writer = row_group_writer.next_column()?.unwrap();
+
+        match column.type_info() {
+            type_info if type_info.type_eq(&sqlx::postgres::PgTypeInfo::with_name("INT8")) => {
+                let values = users_response
+                    .iter()
+                    .map(|row| row.get(column.name()))
+                    .collect::<Vec<_>>();
+
+                let adds =
+                    column_writer
+                        .typed::<Int64Type>()
+                        .write_batch(&values[..], None, None)?;
             }
-            "forename" | "surname" | "password" => {
-                let mut column = row_group_writer.next_column()?.unwrap();
-                let values: Vec<ByteArray> = vec![
-                    ByteArray::from("example"),
-                    ByteArray::from("data"),
-                    ByteArray::from("for"),
-                    ByteArray::from("testing"),
-                ];
-                column
-                    .typed::<ByteArrayType>()
-                    .write_batch(&values[..], None, None)?;
-                column.close()?;
+            type_info if type_info.type_eq(&sqlx::postgres::PgTypeInfo::with_name("VARCHAR")) => {
+                let values = users_response
+                    .iter()
+                    .map(|row| {
+                        let value: &str = row.get(column.name());
+                        // ByteArray::from(value)
+                        value.into()
+                    })
+                    .collect::<Vec<_>>();
+
+                let adds =
+                    column_writer
+                        .typed::<ByteArrayType>()
+                        .write_batch(&values[..], None, None)?;
             }
-            _ => {}
+            _ => {
+                warn!("Unsupported column type: {:?}", column.type_info());
+                // continue;
+            }
         }
+
+        column_writer.close()?;
     }
 
     let row_meta = row_group_writer.close()?;
