@@ -122,7 +122,7 @@ watch-test:
 #  --nocapture
 
 watch-run:
-	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch  -x "run -- start --config test-data/config-localhost.yaml --secrets test-data/secrets --automigrate"
+	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch  -x "run -- start --config test-data/config-localhost.yaml --secrets test-data/secrets"
 
 watch-backup:
 	cd ${BE_DIR} && DATABASE_URL=${DATABASE_URL} cargo watch --ignore 'test-data/backups/*' -x "run -- backup --config test-data/config-localhost.yaml --secrets test-data/secrets test-data/backups"

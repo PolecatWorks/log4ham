@@ -27,10 +27,6 @@ pub async fn generate_parquet_schema_from_table(
     for column in describe.columns() {
         let field_type = column.type_info();
 
-        match field_type {
-            _ => println!("Add more types here field_type: {:?}", field_type),
-        };
-
         let field = match column.type_info().to_string().as_str() {
             "INT4" | "INT8" => Type::primitive_type_builder(column.name(), BasicType::INT64)
                 .with_repetition(Repetition::REQUIRED)
@@ -64,7 +60,7 @@ pub async fn generate_parquet_schema_from_table(
         fields.push(Arc::new(field));
     }
 
-    println!("Fields: {:?}", fields);
+    debug!("Fields: {:?}", fields);
 
     let schema = Type::group_type_builder("schema")
         .with_fields(fields)

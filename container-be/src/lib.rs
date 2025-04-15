@@ -15,7 +15,7 @@ use figment::{
     Figment,
 };
 use figment_file_provider_adapter::FileAdapter;
-use hams::HamsConfig;
+use hamsrs::hams::config::HamsConfig;
 use persistence::{PersistenceConfig, PersistenceState};
 use serde::Deserialize;
 use tokio_tools::ThreadRuntime;

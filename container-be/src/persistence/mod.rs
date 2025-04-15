@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::{path::PathBuf, sync::Arc};
 
 use ::parquet::data_type::{ByteArray, ByteArrayType, Int64Type};
@@ -21,6 +22,7 @@ use crate::{error::MyError, tokio_tools::run_in_tokio, webserver::users, UrlWith
 pub struct DbConfig {
     pub pool_size: u32,
     pub connection: UrlWithUsernamePassword,
+    pub automigrate: bool,
 }
 
 impl DbConfig {
@@ -124,10 +126,15 @@ pub fn start_db_migrate(config: &PersistenceConfig) -> Result<(), MyError> {
     run_in_tokio("db_check", &runtime, db_migrate(ct, config))
 }
 
+/// Backup the database to a Parquet file
+/// This function will create a Parquet file in the specified backup directory
+/// with the name "backup.parquet"
+/// The Parquet file will contain the data from the "users" table
+/// The schema will be generated automatically from the table description
 pub async fn db_backup(
     ct: CancellationToken,
     config: &PersistenceConfig,
-    backup_dir: &PathBuf,
+    backup_dir: &Path,
 ) -> Result<(), MyError> {
     let state = PersistenceState::new(config).await?;
 
@@ -136,29 +143,13 @@ pub async fn db_backup(
     let query = "SELECT * FROM users";
 
     let users_describe = pool.describe(query).await?;
-    users_describe.columns().iter().for_each(|col| {
-        println!("Column: {:?}", col);
-    });
 
-    println!("Describe result: {:?}", users_describe);
+    debug!("Describe result: {:?}", users_describe);
 
     let users_response = sqlx::query("SELECT * FROM users").fetch_all(&pool).await?;
 
-    println!("DB Response: {:?}", users_response);
-
-    let user_schema = "
-        message schema {
-            REQUIRED INT64 id;
-            REQUIRED BINARY forename (UTF8);
-            REQUIRED BINARY surname (UTF8);
-            REQUIRED BINARY password (UTF8);
-        }
-    ";
-
-    let schema_manual = Arc::new(parse_message_type(user_schema)?);
-    println!("Manual Schema: {:#?}", schema_manual);
     let schema_auto = generate_parquet_schema_from_table(&pool, "users").await?;
-    println!("Automatic Schema: {:#?}", schema_auto);
+    debug!("Automatic Schema: {:#?}", schema_auto);
 
     let schema = schema_auto;
 
@@ -173,21 +164,18 @@ pub async fn db_backup(
     let mut row_group_writer = writer.next_row_group()?;
 
     for column in users_describe.columns() {
-        println!("Column: {:?}", column.name());
-
         let mut column_writer = row_group_writer.next_column()?.unwrap();
 
-        match column.type_info() {
+        let adds = match column.type_info() {
             type_info if type_info.type_eq(&sqlx::postgres::PgTypeInfo::with_name("INT8")) => {
                 let values = users_response
                     .iter()
                     .map(|row| row.get(column.name()))
                     .collect::<Vec<_>>();
 
-                let adds =
-                    column_writer
-                        .typed::<Int64Type>()
-                        .write_batch(&values[..], None, None)?;
+                column_writer
+                    .typed::<Int64Type>()
+                    .write_batch(&values[..], None, None)?
             }
             type_info if type_info.type_eq(&sqlx::postgres::PgTypeInfo::with_name("VARCHAR")) => {
                 let values = users_response
@@ -199,22 +187,23 @@ pub async fn db_backup(
                     })
                     .collect::<Vec<_>>();
 
-                let adds =
-                    column_writer
-                        .typed::<ByteArrayType>()
-                        .write_batch(&values[..], None, None)?;
+                column_writer
+                    .typed::<ByteArrayType>()
+                    .write_batch(&values[..], None, None)?
             }
             _ => {
                 warn!("Unsupported column type: {:?}", column.type_info());
-                // continue;
+                0
             }
-        }
+        };
+
+        println!("Added {} values to column {}", adds, column.name());
 
         column_writer.close()?;
     }
 
     let row_meta = row_group_writer.close()?;
-    println!("Row group metadata: {:?}", row_meta);
+    debug!("Row group metadata: {:?}", row_meta);
 
     let meta = writer.close()?;
 

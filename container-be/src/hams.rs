@@ -1,3 +1,4 @@
+use hamsrs::hams::config::HamsConfig;
 use log::{error, info};
 use reqwest::Client;
 use serde::Deserialize;
@@ -11,17 +12,17 @@ use warp::Filter;
 
 use crate::error::MyError;
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct HamsConfig {
-    /// Hostname to start the webservice on
-    /// This allows chainging to localhost for dev and 0.0.0.0 or specific address for deployment
-    pub address: SocketAddr,
-    /// Prefix of the served API
-    pub prefix: String,
+// #[derive(Deserialize, Debug, Clone)]
+// pub struct HamsConfig {
+//     /// Hostname to start the webservice on
+//     /// This allows chainging to localhost for dev and 0.0.0.0 or specific address for deployment
+//     pub address: SocketAddr,
+//     /// Prefix of the served API
+//     pub prefix: String,
 
-    /// enables logging for HaMS API
-    pub logging: bool,
-}
+//     /// enables logging for HaMS API
+//     pub logging: bool,
+// }
 
 pub async fn start_hams_api(config: HamsConfig, ct: CancellationToken) -> Result<(), MyError> {
     let weblog = warp::log("hams");

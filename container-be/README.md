@@ -49,11 +49,6 @@ Tasks
 * Make an async benchmark to test the http
 * Add soft shutdown based on signals
 * Choose DB tooling
-  * ORM
-    * Consider:  Diesel for SQL access
-      * Limiting by what the ORM can do AND does not support async
-    * Consider: https://github.com/SeaQL/sea-query
-    * Consider: https://docs.rs/ormx/latest/ormx/
   * Non ORM
     * Consider: https://docs.rs/sqlx/latest/sqlx/
       Install a Schema Management
@@ -62,10 +57,6 @@ Tasks
         cargo install sqlx-cli
         sqlx migrate add -r initial
         sqlx migrate run
-
-
-    * Consider: https://docs.rs/rbatis/latest/rbatis/index.html#
-      * Used for ormx and seq-query
 
   * Check out the contents of postgres
       podman run --name some-postgres -p 5432:5432 -e POSTGRES_PASSWORD=mypw -d postgres

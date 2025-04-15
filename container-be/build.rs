@@ -7,7 +7,7 @@ fn main() {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     println!(
         "cargo:rustc-link-search=native={}",
-        Path::new(&dir).join("../target/lib").display()
+        Path::new(&dir).join("target/lib").display()
     );
 
     // From here: https://crates.io/crates/bind-builder BUT cannot get it working so using rustc-link-search instead. Followed by using install_name_tool as noted in README.md

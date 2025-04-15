@@ -19,6 +19,7 @@ webservice:
 persistence:
   db:
     pool_size: 20
+    automigrate: true
     connection:
       url: postgres://localhost:5432/log4ham-pg-log4ham
       username_file: db/username

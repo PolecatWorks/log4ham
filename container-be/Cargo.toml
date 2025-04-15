@@ -10,7 +10,7 @@ authors = ["Ben Greene <BenJGreene@gmail.com>"]
 [dependencies]
 bytes = "~1.10"
 clap = { version = "4.5", features = ["derive", "string"] }
-env_logger = "0.11.7"
+env_logger = "~0.11"
 futures = "~0.3"
 log = "~0.4"
 schemars = "~0.8"
@@ -35,6 +35,7 @@ url = { version = "2", features = ["serde"] }
 # object_store ={ version = "~0.11", features = ["aws"] }
 reqwest = { version = "~0.12", default-features = false, features = ["json"] }
 hamsrs = { git = "https://github.com/PolecatWorks/hams.git" }
+ffi-log2 = { git = "https://github.com/PolecatWorks/hams.git" }
 derive_builder = "0.20.2"
 parquet = "55"
 parquet_derive = "55"
@@ -42,14 +43,6 @@ parquet_derive = "55"
 [dev-dependencies]
 criterion = { version = "~0.5", features = ["async_tokio"] }
 
-# [[bench]]
-# name = "validate"
-# harness = false
-
 [[bench]]
 name = "http"
 harness = false
-
-# [[bench]]
-# name = "handlers"
-# harness = false
