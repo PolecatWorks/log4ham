@@ -11,7 +11,6 @@ use std::{
 
 use config::MyConfig;
 use error::MyError;
-use hams::start_hams_api;
 use hamsrs::Hams;
 use metrics::{prometheus_response, prometheus_response_free};
 use persistence::PersistenceState;
@@ -80,28 +79,24 @@ pub async fn service_cancellable(ct: CancellationToken, config: &MyConfig) -> Re
     config.name = NAME.to_owned();
     config.version = VERSION.to_owned();
 
-    let hams2 = Hams::new(ct.clone(), &config).unwrap();
+    let hams = Hams::new(ct.clone(), &config).unwrap();
 
-    hams2.register_prometheus(
+    hams.register_prometheus(
         prometheus_response,
         prometheus_response_free,
         &state.registry as *const _ as *const c_void,
     )?;
 
-    hams2.start().unwrap();
-
-    let hams = tokio::spawn(start_hams_api(state.config.hams.clone(), ct.clone()));
+    hams.start().unwrap();
 
     let server = start_app_api(state.clone(), pool_pg, ct.clone());
 
     server.await;
 
-    hams2.stop().unwrap();
-    hams2.deregister_prometheus()?;
+    hams.stop().unwrap();
+    hams.deregister_prometheus()?;
 
     ct.cancel();
-    let hams_jh = hams.await.unwrap();
-    hams_jh.unwrap();
 
     Ok(())
 }

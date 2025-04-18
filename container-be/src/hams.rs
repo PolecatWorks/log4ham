@@ -12,35 +12,6 @@ use warp::Filter;
 
 use crate::error::MyError;
 
-// #[derive(Deserialize, Debug, Clone)]
-// pub struct HamsConfig {
-//     /// Hostname to start the webservice on
-//     /// This allows chainging to localhost for dev and 0.0.0.0 or specific address for deployment
-//     pub address: SocketAddr,
-//     /// Prefix of the served API
-//     pub prefix: String,
-
-//     /// enables logging for HaMS API
-//     pub logging: bool,
-// }
-
-pub async fn start_hams_api(config: HamsConfig, ct: CancellationToken) -> Result<(), MyError> {
-    let weblog = warp::log("hams");
-
-    let router = warp::any()
-        .map(|| "Hello from Hams".to_string())
-        .with(weblog);
-
-    let fakeaddr = SocketAddr::from(([127, 0, 0, 1], 8078));
-
-    let (addr, server) = warp::serve(router)
-        .bind_with_graceful_shutdown(fakeaddr, async move { ct.cancelled().await });
-    info!("Hams started on port {}", addr);
-
-    server.await;
-    Ok(())
-}
-
 #[serde_as]
 #[derive(Deserialize, Debug, Clone)]
 pub struct Checks {
