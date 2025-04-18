@@ -3,7 +3,6 @@ use core::fmt;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use futures::future::join_all;
 use log4ham::{tokio_tools::rt_multithreaded, webserver::users::User};
-use reqwest::Body;
 use url::Url;
 
 /// Benchmarking function for concurrent requests
@@ -15,7 +14,7 @@ fn bench_http(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("http");
 
-    let client_rt = rt_multithreaded(0).unwrap();
+    let client_rt = rt_multithreaded("client", 0).unwrap();
     let client = reqwest::Client::new();
 
     // http get to hello
@@ -75,7 +74,7 @@ fn bench_http(c: &mut Criterion) {
             let id = format!("{}-{}", num_messages, num_threads);
             let bench_id = BenchmarkId::new("post user", &id);
 
-            let client_rt = rt_multithreaded(num_threads).unwrap();
+            let client_rt = rt_multithreaded("client", num_threads).unwrap();
 
             group.throughput(Throughput::Elements(num_messages));
 
