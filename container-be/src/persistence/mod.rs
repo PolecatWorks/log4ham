@@ -1,22 +1,21 @@
 use std::path::Path;
 use std::{path::PathBuf, sync::Arc};
 
-use ::parquet::data_type::{ByteArray, ByteArrayType, Int64Type};
+use ::parquet::data_type::{ByteArrayType, Int64Type};
 use ::parquet::file::properties::WriterProperties;
 use ::parquet::file::writer::SerializedFileWriter;
-use ::parquet::schema::parser::parse_message_type;
 use log::{debug, info, warn};
 use parquet::generate_parquet_schema_from_table;
 use serde::Deserialize;
 use sqlx::Row;
-use sqlx::{postgres::PgPoolOptions, Column, Executor, PgPool, Pool};
+use sqlx::{postgres::PgPoolOptions, Column, Executor, PgPool};
 use tokio_util::sync::CancellationToken;
 use url::Url;
 
 mod parquet;
 
-use crate::{error::MyError, tokio_tools::run_in_tokio, webserver::users, UrlWithUsernamePassword};
-// use sqlx::Row;
+use crate::config::UrlWithUsernamePassword;
+use crate::{error::MyError, tokio_tools::run_in_tokio};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct DbConfig {

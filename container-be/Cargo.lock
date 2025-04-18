@@ -395,9 +395,9 @@ dependencies = [
 
 [[package]]
 name = "brotli-decompressor"
-version = "4.0.2"
+version = "4.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74fa05ad7d803d413eb8380983b092cbbaf9a85f151b871360e7b00cd7060b37"
+checksum = "a334ef7c9e23abf0ce748e8cd309037da93e606ad52eb372e4ce327a0dcfbdfd"
 dependencies = [
  "alloc-no-stdlib",
  "alloc-stdlib",
@@ -963,7 +963,7 @@ checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 [[package]]
 name = "ffi-log2"
 version = "0.1.0"
-source = "git+https://github.com/PolecatWorks/hams.git#e961fb5bc8747a6f80cdc1b26849fea70112f95c"
+source = "git+https://github.com/PolecatWorks/hams.git#7651e3a73ccd96e92e86c595d376ed4d154179bb"
 dependencies = [
  "cbindgen",
  "log",
@@ -1234,7 +1234,7 @@ dependencies = [
 [[package]]
 name = "hams"
 version = "0.2.0"
-source = "git+https://github.com/PolecatWorks/hams.git#e961fb5bc8747a6f80cdc1b26849fea70112f95c"
+source = "git+https://github.com/PolecatWorks/hams.git#7651e3a73ccd96e92e86c595d376ed4d154179bb"
 dependencies = [
  "aquamarine",
  "async-trait",
@@ -1259,7 +1259,7 @@ dependencies = [
 [[package]]
 name = "hamsrs"
 version = "0.1.0"
-source = "git+https://github.com/PolecatWorks/hams.git#e961fb5bc8747a6f80cdc1b26849fea70112f95c"
+source = "git+https://github.com/PolecatWorks/hams.git#7651e3a73ccd96e92e86c595d376ed4d154179bb"
 dependencies = [
  "derive_builder",
  "ffi-log2",

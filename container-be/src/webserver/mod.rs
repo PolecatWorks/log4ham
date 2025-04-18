@@ -5,18 +5,12 @@ mod qslcard;
 mod stationsetup;
 pub mod users;
 
-use hamsrs::{Hams, VERSION};
 use log::info;
-use prometheus::{Encoder, Registry};
+
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::json;
 use sqlx::{types::Decimal, Pool, Postgres};
-use std::{
-    convert::Infallible,
-    ffi::{c_char, c_void, CString},
-    net::SocketAddr,
-    path::PathBuf,
-};
+use std::{convert::Infallible, net::SocketAddr, path::PathBuf};
 use tokio_util::sync::CancellationToken;
 use warp::{
     reject::Rejection,
@@ -25,7 +19,7 @@ use warp::{
 };
 
 use crate::{
-    error::MyError, hams::start_hams_api, tokio_tools::run_in_tokio, MyConfig, MyState, NAME,
+    config::MyConfig, error::MyError, service_cancellable, tokio_tools::run_in_tokio, MyState, NAME,
 };
 
 use warp::hyper::StatusCode;
@@ -130,89 +124,7 @@ pub struct WebServiceConfig {
     pub forwarding_headers: Vec<String>,
 }
 
-#[no_mangle]
-pub extern "C" fn prometheus_response(ptr: *const c_void) -> *const c_char {
-    let state = unsafe { &*(ptr as *const Registry) };
-
-    let encoder = prometheus::TextEncoder::new();
-    let mut buffer = Vec::new();
-
-    let metric_families = state.gather();
-
-    encoder.encode(&metric_families, &mut buffer).unwrap();
-
-    let prometheus = String::from_utf8(buffer).unwrap();
-
-    // let x = encoder.encode(&state.gather(), &mut buffer);
-    // if let Err(e) = x {
-    //     eprintln!("could not encode custom metrics: {}", e);
-    // };
-    // let res_custom = match String::from_utf8(buffer.clone()) {
-    //     Ok(v) => v,
-    //     Err(e) => {
-    //         eprintln!("could not convert to string: {}", e);
-    //         return std::ptr::null();
-    //     }
-    // };
-    // buffer.clear();
-
-    // res.push_str(&res_custom);
-
-    // let prometheus = format!("test {state:?}");
-    let c_str_prometheus = std::ffi::CString::new(prometheus).unwrap();
-
-    c_str_prometheus.into_raw()
-}
-
-#[no_mangle]
-pub extern "C" fn prometheus_response_free(ptr: *mut c_char) {
-    if ptr.is_null() {
-        return;
-    }
-    unsafe {
-        let _ = CString::from_raw(ptr);
-    };
-}
-
-pub async fn service_cancellable(ct: CancellationToken, config: &MyConfig) -> Result<(), MyError> {
-    let state = MyState::new("apple", config).await?;
-
-    let pool_pg = state.db_state.pool_pg.clone();
-
-    // Initialise liveness here
-
-    let mut config = state.config.hams.clone();
-
-    config.name = NAME.to_owned();
-    config.version = VERSION.to_owned();
-
-    let hams2 = Hams::new(ct.clone(), &config).unwrap();
-
-    hams2.register_prometheus(
-        prometheus_response,
-        prometheus_response_free,
-        &state.registry as *const _ as *const c_void,
-    )?;
-
-    hams2.start().unwrap();
-
-    let hams = tokio::spawn(start_hams_api(state.config.hams.clone(), ct.clone()));
-
-    let server = start_app_api(state.clone(), pool_pg, ct.clone());
-
-    server.await;
-
-    hams2.stop().unwrap();
-    hams2.deregister_prometheus()?;
-
-    ct.cancel();
-    let hams_jh = hams.await.unwrap();
-    hams_jh.unwrap();
-
-    Ok(())
-}
-
-async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: CancellationToken) {
+pub async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: CancellationToken) {
     let prefix = state.config.webservice.prefix.clone();
 
     // Setup http server
@@ -284,15 +196,15 @@ async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Inf
                 (StatusCode::IM_A_TEAPOT, reply::json(&error_message))
             }
             MyError::Cancelled => todo!(),
-            MyError::Serde(_) => todo!(),
-            MyError::Io(_) => todo!(),
+            MyError::Serde(err) => todo!("Serde error: {}", err),
+            MyError::Io(err) => todo!("IO error: {}", err),
             MyError::JsonValidation(errors) => {
                 let myval = serde_json::json!( { "status:": "validation failed","errors": errors});
 
                 (StatusCode::BAD_REQUEST, reply::json(&myval))
             }
             MyError::ValidationError() => todo!(),
-            MyError::FigmentError(err) => todo!(),
+            MyError::FigmentError(err) => todo!("Figment error: {}", err),
             MyError::SqlxError(err) => {
                 println!("error is {}", err);
                 match err {
@@ -308,10 +220,10 @@ async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Inf
             }
             MyError::PreflightCheck => todo!(),
             MyError::ShutdownCheck => todo!(),
-            MyError::SqlxMigrateError(migrate_error) => todo!(),
-            MyError::ParquetError(parquet_error) => todo!(),
-            MyError::PrometheusError(error) => todo!(),
-            MyError::HamsError(hams_error) => todo!(),
+            MyError::SqlxMigrateError(er) => todo!("SQLX Migrate error: {}", er),
+            MyError::ParquetError(err) => todo!("Parquet error: {}", err),
+            MyError::PrometheusError(err) => todo!("Prometheus error: {}", err),
+            MyError::HamsError(err) => todo!("HaMs error: {}", err),
         }
     } else {
         eprintln!("unhandled error: {:?}", err);

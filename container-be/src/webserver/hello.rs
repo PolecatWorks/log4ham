@@ -1,5 +1,4 @@
 use log::info;
-use prometheus::{core::GenericGauge, Gauge, IntGauge, Registry};
 use warp::Filter;
 
 use crate::MyState;

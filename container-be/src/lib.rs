@@ -5,27 +5,26 @@
 //! Additionally the program can validate JSON loaded to the application or can run an http server to allow uploading of json file to the application.
 
 use std::{
-    path::Path,
+    ffi::c_void,
     sync::{Arc, Mutex},
 };
 
+use config::MyConfig;
 use error::MyError;
-use figment::{
-    providers::{Format, Yaml},
-    Figment,
-};
-use figment_file_provider_adapter::FileAdapter;
-use hamsrs::hams::config::HamsConfig;
-use persistence::{PersistenceConfig, PersistenceState};
-use prometheus::{Counter, IntGauge, Registry};
-use serde::Deserialize;
-use tokio_tools::ThreadRuntime;
-use url::Url;
-use warp::reject::Reject;
-use webserver::WebServiceConfig;
+use hams::start_hams_api;
+use hamsrs::Hams;
+use metrics::{prometheus_response, prometheus_response_free};
+use persistence::PersistenceState;
+use prometheus::{IntGauge, Registry};
 
+use tokio_util::sync::CancellationToken;
+use warp::reject::Reject;
+use webserver::start_app_api;
+
+pub mod config;
 pub mod error;
 pub mod hams;
+mod metrics;
 pub mod persistence;
 pub mod tokio_tools;
 pub mod webserver;
@@ -37,44 +36,6 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 // Marker trait to indicate MyError is a planned rejection type
 impl Reject for MyError {}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct UrlWithUsernamePassword {
-    pub url: Url,
-    pub username: Option<String>,
-    pub password: Option<String>,
-}
-
-impl From<UrlWithUsernamePassword> for Url {
-    fn from(value: UrlWithUsernamePassword) -> Self {
-        let mut return_url = value.url;
-
-        if let Some(password) = value.password {
-            return_url.set_password(Some(&password)).unwrap();
-        }
-        if let Some(username) = value.username {
-            return_url.set_username(&username).unwrap();
-        }
-        return_url
-    }
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct MyConfig {
-    /// Config of my web service
-    pub hams: HamsConfig,
-    pub runtime: ThreadRuntime,
-    pub webservice: WebServiceConfig,
-    pub persistence: PersistenceConfig,
-}
-
-impl MyConfig {
-    // Note the `nested` option on both `file` providers. This makes each
-    // top-level dictionary act as a profile.
-    pub fn figment<P: AsRef<Path> + Clone>(yaml_string: &str, secrets: P) -> Figment {
-        Figment::new().merge(FileAdapter::wrap(Yaml::string(yaml_string)).relative_to_dir(secrets))
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct MyState {
@@ -109,31 +70,40 @@ impl<'a, 'b: 'a> MyState {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::UrlWithUsernamePassword;
-    use url::Url;
+pub async fn service_cancellable(ct: CancellationToken, config: &MyConfig) -> Result<(), MyError> {
+    let state = MyState::new("apple", config).await?;
 
-    #[test]
-    fn try_out_enum() {
-        let temp_url = UrlWithUsernamePassword {
-            url: Url::parse("postgres://myuser:mypass@localhost/mydb").unwrap(),
-            username: None,
-            password: None,
-        };
-        assert_eq!(
-            Into::<Url>::into(temp_url).as_str(),
-            "postgres://myuser:mypass@localhost/mydb"
-        );
+    let pool_pg = state.db_state.pool_pg.clone();
 
-        let temp_url = UrlWithUsernamePassword {
-            url: Url::parse("postgres://myuser:mypass@localhost/mydb").unwrap(),
-            username: Some("user0".to_owned()),
-            password: Some("pass0".to_owned()),
-        };
-        assert_eq!(
-            Into::<Url>::into(temp_url).as_str(),
-            "postgres://user0:pass0@localhost/mydb"
-        );
-    }
+    // Initialise liveness here
+
+    let mut config = state.config.hams.clone();
+
+    config.name = NAME.to_owned();
+    config.version = VERSION.to_owned();
+
+    let hams2 = Hams::new(ct.clone(), &config).unwrap();
+
+    hams2.register_prometheus(
+        prometheus_response,
+        prometheus_response_free,
+        &state.registry as *const _ as *const c_void,
+    )?;
+
+    hams2.start().unwrap();
+
+    let hams = tokio::spawn(start_hams_api(state.config.hams.clone(), ct.clone()));
+
+    let server = start_app_api(state.clone(), pool_pg, ct.clone());
+
+    server.await;
+
+    hams2.stop().unwrap();
+    hams2.deregister_prometheus()?;
+
+    ct.cancel();
+    let hams_jh = hams.await.unwrap();
+    hams_jh.unwrap();
+
+    Ok(())
 }

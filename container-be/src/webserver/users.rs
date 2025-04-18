@@ -1,4 +1,3 @@
-use parquet_derive::ParquetRecordWriter;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use warp::Filter;

@@ -2,7 +2,6 @@
 //!
 //! Allow derriving MyError from other Error types from dependant packages.
 
-use core::error;
 use std::io;
 
 use hamsrs::hamserror::HamsError;

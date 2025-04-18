@@ -7,13 +7,14 @@ use ffi_log2::log_param;
 use hamsrs::hams_logger_init;
 
 use log::{debug, error, info};
+use log4ham::config::MyConfig;
 use log4ham::{
     error::MyError,
     persistence::{start_db_backup, start_db_check_tables, start_db_migrate},
     webserver::service_start,
 };
 
-use log4ham::{MyConfig, NAME, VERSION};
+use log4ham::{NAME, VERSION};
 
 /// Application definition to defer to set of commands under [Commands]
 #[derive(Parser)]
