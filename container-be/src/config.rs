@@ -93,7 +93,7 @@ impl From<UrlWithUsernamePassword> for Url {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 pub struct MyConfig {
     /// Config of my web service
     pub hams: HamsConfig,

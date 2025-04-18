@@ -17,6 +17,15 @@ pub struct ThreadRuntime {
     pub stack_size: usize,
 }
 
+impl Default for ThreadRuntime {
+    fn default() -> Self {
+        ThreadRuntime {
+            threads: 0,
+            stack_size: 3_000_000,
+        }
+    }
+}
+
 pub fn rt_multithreaded(name: &str, runtime: &ThreadRuntime) -> Result<Runtime, MyError> {
     if runtime.threads == 0 {
         runtime::Builder::new_current_thread()

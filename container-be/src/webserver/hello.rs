@@ -26,12 +26,20 @@ pub fn hello(
 
 #[cfg(test)]
 mod tests {
+    use crate::config::MyConfig;
+
     use super::*;
     use warp::test::request;
 
     #[tokio::test]
     async fn test_hello() {
-        let response = request().method("GET").path("/").reply(&hello()).await;
+        let config = MyConfig::default();
+        let state = MyState::new(&config).await.unwrap();
+        let response = request()
+            .method("GET")
+            .path("/")
+            .reply(&hello(&state))
+            .await;
 
         assert_eq!(response.status(), 200);
 

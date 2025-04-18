@@ -24,13 +24,27 @@ pub struct DbConfig {
     pub automigrate: bool,
 }
 
+impl Default for DbConfig {
+    fn default() -> Self {
+        DbConfig {
+            pool_size: 5,
+            connection: UrlWithUsernamePassword {
+                url: Url::parse("postgres://localhost:5432").unwrap(),
+                username: None,
+                password: None,
+            },
+            automigrate: true,
+        }
+    }
+}
+
 impl DbConfig {
     pub fn connection(&self) -> Url {
         self.connection.clone().into()
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 pub struct PersistenceConfig {
     pub db: DbConfig,
 }
@@ -65,8 +79,6 @@ pub async fn db_count_records(
 
     let select_reply = sqlx::query("SELECT 1").fetch_one(&pool_pg).await?;
 
-    info!("select_reply: {:?}", select_reply);
-
     // iterate over tables called users,logs and count the number of records in each
 
     for table in ["users", "logs"] {
@@ -99,8 +111,6 @@ pub async fn db_migrate(ct: CancellationToken, config: &PersistenceConfig) -> Re
     let pool = state.pool_pg.clone();
 
     let select_reply = sqlx::query("SELECT 1").fetch_one(&pool).await?;
-
-    info!("select_reply: {:?}", select_reply);
 
     // Run migrations
     // sqlx::migrate!() macro finds the migrations folder relative to Cargo.toml

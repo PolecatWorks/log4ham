@@ -123,6 +123,15 @@ pub struct WebServiceConfig {
     pub address: SocketAddr,
     pub forwarding_headers: Vec<String>,
 }
+impl Default for WebServiceConfig {
+    fn default() -> Self {
+        Self {
+            prefix: "api".to_string(),
+            address: "127.0.0.1:1234".parse().unwrap(),
+            forwarding_headers: vec![],
+        }
+    }
+}
 
 pub async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: CancellationToken) {
     let prefix = state.config.webservice.prefix.clone();

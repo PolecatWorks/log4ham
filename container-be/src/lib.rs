@@ -39,7 +39,6 @@ impl Reject for MyError {}
 
 #[derive(Debug, Clone)]
 pub struct MyState {
-    name: String,
     config: MyConfig,
     db_state: PersistenceState,
     pub count_good: Arc<Mutex<usize>>,
@@ -48,8 +47,8 @@ pub struct MyState {
     hello_counter: IntGauge,
 }
 
-impl<'a, 'b: 'a> MyState {
-    pub async fn new<S: Into<String>>(name: S, config: &MyConfig) -> Result<MyState, MyError> {
+impl MyState {
+    pub async fn new(config: &MyConfig) -> Result<MyState, MyError> {
         let db_state = PersistenceState::new(&config.persistence).await?;
 
         let registry = Registry::new();
@@ -59,7 +58,6 @@ impl<'a, 'b: 'a> MyState {
         registry.register(Box::new(hello_counter.clone()))?;
 
         Ok(MyState {
-            name: name.into(),
             config: config.clone(),
             db_state,
             count_good: Arc::new(Mutex::new(0)),
@@ -71,7 +69,7 @@ impl<'a, 'b: 'a> MyState {
 }
 
 pub async fn service_cancellable(ct: CancellationToken, config: &MyConfig) -> Result<(), MyError> {
-    let state = MyState::new("apple", config).await?;
+    let state = MyState::new(config).await?;
 
     let pool_pg = state.db_state.pool_pg.clone();
 
