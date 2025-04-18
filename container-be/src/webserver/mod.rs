@@ -5,11 +5,18 @@ mod qslcard;
 mod stationsetup;
 pub mod users;
 
+use hamsrs::{Hams, VERSION};
 use log::info;
+use prometheus::{Encoder, Registry};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::json;
 use sqlx::{types::Decimal, Pool, Postgres};
-use std::{convert::Infallible, net::SocketAddr, path::PathBuf};
+use std::{
+    convert::Infallible,
+    ffi::{c_char, c_void, CString},
+    net::SocketAddr,
+    path::PathBuf,
+};
 use tokio_util::sync::CancellationToken;
 use warp::{
     reject::Rejection,
@@ -123,6 +130,50 @@ pub struct WebServiceConfig {
     pub forwarding_headers: Vec<String>,
 }
 
+#[no_mangle]
+pub extern "C" fn prometheus_response(ptr: *const c_void) -> *const c_char {
+    let state = unsafe { &*(ptr as *const Registry) };
+
+    let encoder = prometheus::TextEncoder::new();
+    let mut buffer = Vec::new();
+
+    let metric_families = state.gather();
+
+    encoder.encode(&metric_families, &mut buffer).unwrap();
+
+    let prometheus = String::from_utf8(buffer).unwrap();
+
+    // let x = encoder.encode(&state.gather(), &mut buffer);
+    // if let Err(e) = x {
+    //     eprintln!("could not encode custom metrics: {}", e);
+    // };
+    // let res_custom = match String::from_utf8(buffer.clone()) {
+    //     Ok(v) => v,
+    //     Err(e) => {
+    //         eprintln!("could not convert to string: {}", e);
+    //         return std::ptr::null();
+    //     }
+    // };
+    // buffer.clear();
+
+    // res.push_str(&res_custom);
+
+    // let prometheus = format!("test {state:?}");
+    let c_str_prometheus = std::ffi::CString::new(prometheus).unwrap();
+
+    c_str_prometheus.into_raw()
+}
+
+#[no_mangle]
+pub extern "C" fn prometheus_response_free(ptr: *mut c_char) {
+    if ptr.is_null() {
+        return;
+    }
+    unsafe {
+        let _ = CString::from_raw(ptr);
+    };
+}
+
 pub async fn service_cancellable(ct: CancellationToken, config: &MyConfig) -> Result<(), MyError> {
     let state = MyState::new("apple", config).await?;
 
@@ -130,11 +181,29 @@ pub async fn service_cancellable(ct: CancellationToken, config: &MyConfig) -> Re
 
     // Initialise liveness here
 
+    let mut config = state.config.hams.clone();
+
+    config.name = NAME.to_owned();
+    config.version = VERSION.to_owned();
+
+    let hams2 = Hams::new(ct.clone(), &config).unwrap();
+
+    hams2.register_prometheus(
+        prometheus_response,
+        prometheus_response_free,
+        &state.registry as *const _ as *const c_void,
+    )?;
+
+    hams2.start().unwrap();
+
     let hams = tokio::spawn(start_hams_api(state.config.hams.clone(), ct.clone()));
 
     let server = start_app_api(state.clone(), pool_pg, ct.clone());
 
     server.await;
+
+    hams2.stop().unwrap();
+    hams2.deregister_prometheus()?;
 
     ct.cancel();
     let hams_jh = hams.await.unwrap();
@@ -152,7 +221,7 @@ async fn start_app_api(state: MyState, pool_pg: Pool<Postgres>, ct: Cancellation
 
     let combined = warp::path("users")
         .and(users::users(pool_pg.clone()))
-        .or(warp::path("hello").and(hello::hello()))
+        .or(warp::path("hello").and(hello::hello(&state)))
         .or(warp::path("logs").and(logs::logs(pool_pg.clone())))
         .or(warp::path("contacts").and(contacts::routes::contacts(pool_pg.clone())))
         .or(warp::path("stationsetups").and(stationsetup::routes::station_setup(pool_pg.clone())))
@@ -241,6 +310,8 @@ async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Inf
             MyError::ShutdownCheck => todo!(),
             MyError::SqlxMigrateError(migrate_error) => todo!(),
             MyError::ParquetError(parquet_error) => todo!(),
+            MyError::PrometheusError(error) => todo!(),
+            MyError::HamsError(hams_error) => todo!(),
         }
     } else {
         eprintln!("unhandled error: {:?}", err);

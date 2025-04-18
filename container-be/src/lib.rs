@@ -17,6 +17,7 @@ use figment::{
 use figment_file_provider_adapter::FileAdapter;
 use hamsrs::hams::config::HamsConfig;
 use persistence::{PersistenceConfig, PersistenceState};
+use prometheus::{Counter, IntGauge, Registry};
 use serde::Deserialize;
 use tokio_tools::ThreadRuntime;
 use url::Url;
@@ -82,11 +83,19 @@ pub struct MyState {
     db_state: PersistenceState,
     pub count_good: Arc<Mutex<usize>>,
     pub count_fail: Arc<Mutex<usize>>,
+    registry: Registry,
+    hello_counter: IntGauge,
 }
 
 impl<'a, 'b: 'a> MyState {
     pub async fn new<S: Into<String>>(name: S, config: &MyConfig) -> Result<MyState, MyError> {
         let db_state = PersistenceState::new(&config.persistence).await?;
+
+        let registry = Registry::new();
+
+        let hello_counter = IntGauge::new("my_counter", "A counter for my application")?;
+
+        registry.register(Box::new(hello_counter.clone()))?;
 
         Ok(MyState {
             name: name.into(),
@@ -94,6 +103,8 @@ impl<'a, 'b: 'a> MyState {
             db_state,
             count_good: Arc::new(Mutex::new(0)),
             count_fail: Arc::new(Mutex::new(0)),
+            registry,
+            hello_counter,
         })
     }
 }

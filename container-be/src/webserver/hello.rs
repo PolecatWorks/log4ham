@@ -1,13 +1,28 @@
+use log::info;
+use prometheus::{core::GenericGauge, Gauge, IntGauge, Registry};
 use warp::Filter;
 
-pub fn list() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+use crate::MyState;
+
+use super::with_state;
+
+pub fn list(
+    state: &MyState,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path::end()
         .and(warp::get())
-        .map(|| warp::reply::json(&"Hello, world!"))
+        .and(with_state(state.clone()))
+        .map(|state: MyState| {
+            state.hello_counter.inc();
+            info!("Hello: {}", state.hello_counter.get());
+            warp::reply::json(&"Hello, world!")
+        })
 }
 
-pub fn hello() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    list()
+pub fn hello(
+    state: &MyState,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    list(state)
 }
 
 #[cfg(test)]

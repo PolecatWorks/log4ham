@@ -2,8 +2,10 @@
 //!
 //! Allow derriving MyError from other Error types from dependant packages.
 
+use core::error;
 use std::io;
 
+use hamsrs::hamserror::HamsError;
 use thiserror::Error;
 
 /// Error type for handling errors on Sample
@@ -37,4 +39,8 @@ pub enum MyError {
     /// Failed to complete shutdown check
     #[error("Shutdown error")]
     ShutdownCheck,
+    #[error("Prometheus error `{0}`")]
+    PrometheusError(#[from] prometheus::Error),
+    #[error("HaMs error `{0}`")]
+    HamsError(#[from] HamsError),
 }

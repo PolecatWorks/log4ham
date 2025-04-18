@@ -31,8 +31,10 @@ pub async fn start_hams_api(config: HamsConfig, ct: CancellationToken) -> Result
         .map(|| "Hello from Hams".to_string())
         .with(weblog);
 
+    let fakeaddr = SocketAddr::from(([127, 0, 0, 1], 8078));
+
     let (addr, server) = warp::serve(router)
-        .bind_with_graceful_shutdown(config.address, async move { ct.cancelled().await });
+        .bind_with_graceful_shutdown(fakeaddr, async move { ct.cancelled().await });
     info!("Hams started on port {}", addr);
 
     server.await;
